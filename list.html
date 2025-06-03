@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>予約一覧</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+      padding: 20px;
+    }
+
+    .log-container {
+      max-width: 600px;
+      margin: auto;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .log-container h2 {
+      margin-top: 0;
+    }
+
+    .reservation-entry {
+      margin-bottom: 20px;
+    }
+
+    .reservation-entry hr {
+      border: none;
+      border-top: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="log-container">
+    <h2>予約一覧</h2>
+    <div id="logContent">
+      <p>まだ予約はありません。</p>
+    </div>
+    <a href="reservation.html">戻る</a>
+  </div>
+
+  <script>
+    const reservations = JSON.parse(localStorage.getItem("reservations")) || [];
+
+    const log = document.getElementById("logContent");
+
+    if (reservations.filter(r => r.reserved).length === 0) {
+      log.innerHTML = "<p>まだ予約はありません。</p>";
+    } else {
+      log.innerHTML = reservations.filter(r => r.reserved).map(r => `
+        <div class="reservation-entry">
+          <p><strong>日付:</strong> ${r.date}</p>
+          <p><strong>店舗名:</strong> ${r.store}</p>
+          <p><strong>住所:</strong> ${r.address}</p>
+          <hr>
+        </div>
+      `).join("");
+    }
+  </script>
+</body>
+</html>

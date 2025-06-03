@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>予約システム</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+
+    .menu-icon {
+      font-size: 30px;
+      cursor: pointer;
+      padding: 15px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+    }
+
+    .sidebar {
+      height: 100%;
+      width: 0;
+      position: fixed;
+      z-index: 999;
+      top: 0;
+      left: 0;
+      background-color: #333;
+      overflow-x: hidden;
+      transition: 0.3s;
+      padding-top: 60px;
+    }
+
+    .sidebar a {
+      padding: 10px 20px;
+      text-decoration: none;
+      font-size: 18px;
+      color: #fff;
+      display: block;
+    }
+
+    .sidebar a:hover {
+      background-color: #575757;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 80px auto 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .card {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .card p {
+      margin: 8px 0;
+    }
+
+    .button {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .register-button { background-color: #28a745; }
+    .entry-button    { background-color: #007BFF; }
+    .cancel-button   { background-color: #dc3545; }
+    .button:hover    { opacity: 0.9; }
+
+    .reservation-log {
+      max-width: 500px;
+      margin: 0 auto 40px;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: none;
+    }
+
+    .reservation-log h3 {
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ハンバーガーメニュー -->
+  <div class="menu-icon" onclick="openSidebar()">☰</div>
+  <div id="sidebar" class="sidebar">
+    <a href="javascript:void(0)" onclick="closeSidebar()">✕ 閉じる</a>
+    <!-- <a href="javascript:void(0)" onclick="showReservationLog()">予約一覧</a> -->
+    <a href="list.html">予約一覧</a>
+    <a href="name.html">名前の変更</a>
+    <a href="entries.html">予約者一覧</a>
+
+  </div>
+
+  <!-- 名前入力 -->
+  <div class="container" id="nameContainer">
+    <div class="card">
+      <label for="userName">お名前を入力してください：</label>
+      <input type="text" id="userName" placeholder="例：山田 太郎" style="width: 100%; padding: 10px; margin-top: 5px;">
+      <button class="button register-button" onclick="registerName()">登録</button>
+    </div>
+  </div>
+
+  <!-- 予約カード一覧 -->
+  <div class="container" id="reservationContainer" style="display: none;"></div>
+
+  <!-- 予約一覧 -->
+  <div id="reservationLog" class="reservation-log">
+    <h3>予約一覧</h3>
+    <div id="logContent">
+      <p>まだ予約はありません。</p>
+    </div>
+  </div>
+
+  <script>
+    let userName = "";
+    const reservations = [
+      {
+        id: 1,
+        date: "2025年6月15日",
+        store: "サンプルカフェ東京店",
+        address: "東京都渋谷区○○1-2-3",
+        reserved: false
+      },
+      {
+        id: 2,
+        date: "2025年6月15日",
+        store: "サンプルカフェ新宿店",
+        address: "東京都新宿区△△4-5-6",
+        reserved: false
+      },
+      {
+        id: 3,
+        date: "2025年6月15日",
+        store: "サンプルカフェ新宿店",
+        address: "東京都新宿区△△4-5-6",
+        reserved: false
+      },
+      {
+        id: 4,
+        date: "2025年6月15日",
+        store: "サンプルカフェ新宿店",
+        address: "東京都新宿区△△4-5-6",
+        reserved: false
+      }
+    ];
+
+    function openSidebar() {
+      document.getElementById("sidebar").style.width = "250px";
+    }
+
+    function closeSidebar() {
+      document.getElementById("sidebar").style.width = "0";
+    }
+
+    function registerName() {
+      const input = document.getElementById("userName").value.trim();
+      if (!input) {
+        alert("名前を入力してください。");
+        return;
+      }
+      userName = input;
+      localStorage.setItem("userName", userName);
+      alert(userName + " さんの名前を登録しました。");
+
+      document.getElementById("nameContainer").style.display = "none";
+      document.getElementById("reservationContainer").style.display = "flex";
+      renderReservations();
+    }
+
+    function renderReservations() {
+      const container = document.getElementById("reservationContainer");
+      container.innerHTML = "";
+
+      reservations.forEach((res, index) => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const entryButton = document.createElement("button");
+        entryButton.className = "button entry-button";
+        entryButton.textContent = res.reserved ? "エントリー済み" : "エントリー";
+        entryButton.disabled = res.reserved;
+        entryButton.onclick = () => {
+          res.reserved = true;
+          res.userName = userName;
+          alert(`${userName} さんが ${res.store} にエントリーしました。`);
+          localStorage.setItem("reservations", JSON.stringify(reservations));
+          renderReservations();
+          updateReservationLog();
+        };
+
+        const cancelButton = document.createElement("button");
+        cancelButton.className = "button cancel-button";
+        cancelButton.textContent = "キャンセル";
+        cancelButton.style.display = res.reserved ? "block" : "none";
+        cancelButton.onclick = () => {
+          res.reserved = false;
+          res.userName = "";
+          alert(`${userName} さんの予約をキャンセルしました。`);
+          localStorage.setItem("reservations", JSON.stringify(reservations));
+          renderReservations();
+          updateReservationLog();
+        };
+
+      <!--
+        card.innerHTML = `
+          <p><strong>日付:</strong> ${res.date}</p>
+          <p><strong>店舗名:</strong> ${res.store}</p>
+          <p><strong>住所:</strong> ${res.address}</p>
+        `;
+        card.appendChild(entryButton);
+        card.appendChild(cancelButton);
+        container.appendChild(card);
+      -->
+
+      }); 
+      
+    }
+
+    function updateReservationLog() {
+      const log = document.getElementById("logContent");
+      const reserved = reservations.filter(r => r.reserved);
+
+      if (reserved.length === 0) {
+        log.innerHTML = "<p>まだ予約はありません</p>";
+        return;
+      }
+
+      log.innerHTML = reserved.map(r => `
+        <!-- <p><strong>名前:</strong> ${userName}</p> -->
+        <p><strong>日付:</strong> ${r.date}</p>
+        <p><strong>店舗名:</strong> ${r.store}</p>
+        <p><strong>住所:</strong> ${r.address}</p>
+        <hr>
+      `).join("");
+    }
+
+    function showReservationLog() {
+      closeSidebar();
+      document.getElementById("reservationLog").style.display = "block";
+      window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    window.onload = () => {
+      const savedName = localStorage.getItem("userName");
+      const savedReservations = localStorage.getItem("reservations");
+
+      if (savedName) {
+        userName = savedName;
+        document.getElementById("nameContainer").style.display = "none";
+        document.getElementById("reservationContainer").style.display = "flex";
+
+        if (savedReservations) {
+          const parsedReservations = JSON.parse(savedReservations);
+          for (let i = 0; i < reservations.length; i++) {
+            reservations[i].reserved = parsedReservations[i]?.reserved || false;
+            reservations[i].userName = parsedReservations[i]?.userName || "";
+          }
+        }
+
+        renderReservations();
+        updateReservationLog();
+      }
+    };
+
+  </script>
+
+</body>
+</html>

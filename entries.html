@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>予約者一覧</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    .card {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .card p {
+      margin: 6px 0;
+    }
+
+    .user-name {
+      font-weight: bold;
+      color: #28a745;
+    }
+  </style>
+</head>
+<body>
+  <h2>予約者一覧</h2>
+  <div id="entryList"></div>
+
+  <script>
+    const reservations = JSON.parse(localStorage.getItem("reservations") || "[]");
+
+    const entryList = document.getElementById("entryList");
+    if (reservations.length === 0) {
+      entryList.innerHTML = "<p style='text-align:center;'>予約情報がありません。</p>";
+    } else {
+      reservations.forEach(res => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        card.innerHTML = `
+          <p><strong>日付:</strong> ${res.date}</p>
+          <p><strong>店舗名:</strong> ${res.store}</p>
+          <p><strong>住所:</strong> ${res.address}</p>
+          <p><strong>予約者:</strong> <span class="user-name">${res.reserved && res.userName ? res.userName : "（なし）"}</span></p>
+        `;
+
+        entryList.appendChild(card);
+      });
+    }
+  </script>
+</body>
+</html>
