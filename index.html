@@ -249,7 +249,7 @@
           res.userName = "";
           alert(`${userName} さんの予約をキャンセルしました。`);
           localStorage.setItem("reservations", JSON.stringify(reservations));
-          firebase.database().ref('reservations/' + res.id + '/entries').set(res);
+          firebase.database().ref('reservations/' + res.id + '/entries').set(res); //エラー
           renderReservations();
           updateReservationLog();
         };
