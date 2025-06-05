@@ -225,7 +225,7 @@
           res.userName = userName;
           alert(`${userName} さんが ${res.store} にエントリーしました。`);
           localStorage.setItem("reservations", JSON.stringify(reservations));
-          firebase.database().ref('reservations/' + res.id).set(res); // ← Firebaseに保存
+          firebase.database().ref('reservations/' + res.id + '/entries').push(userName);
           renderReservations();
           updateReservationLog();
         };
@@ -249,7 +249,7 @@
           res.userName = "";
           alert(`${userName} さんの予約をキャンセルしました。`);
           localStorage.setItem("reservations", JSON.stringify(reservations));
-          firebase.database().ref('reservations/' + res.id).set(res); // ← Firebaseを更新
+          firebase.database().ref('reservations/' + res.id + '/entries').push(userName);
           renderReservations();
           updateReservationLog();
         };
