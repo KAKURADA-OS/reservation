@@ -218,18 +218,11 @@
         entryButton.textContent = res.reserved ? "エントリー済み" : "エントリー";
         entryButton.disabled = res.reserved;
         entryButton.onclick = () => {
-          const entryRef = firebase.database().ref('reservations/' + res.id + '/entries');
-          const newEntry = {
-            userName: userName,
-            timestamp: Date.now()
-          };
-          entryRef.push(newEntry);
-          
           res.reserved = true;
           res.userName = userName;
           alert(`${userName} さんが ${res.store} にエントリーしました。`);
           localStorage.setItem("reservations", JSON.stringify(reservations));
-          
+          firebase.database().ref('reservations/' + res.id).set(res); // ← Firebaseに保存
           renderReservations();
           updateReservationLog();
         };
@@ -240,20 +233,11 @@
         cancelButton.textContent = "キャンセル";
         cancelButton.style.display = res.reserved ? "block" : "none";
         cancelButton.onclick = () => {
-          const entryRef = firebase.database().ref('reservations/' + res.id + '/entries');
-          entryRef.once('value', snapshot => {
-            snapshot.forEach(child => {
-              if (child.val() === userName) {
-                child.ref.remove(); // 一致する名前のエントリーを削除
-              }
-            });
-          });
-          
           res.reserved = false;
           res.userName = "";
           alert(`${userName} さんの予約をキャンセルしました。`);
           localStorage.setItem("reservations", JSON.stringify(reservations));
-          
+          firebase.database().ref('reservations/' + res.id).set(res); // ← Firebaseを更新
           renderReservations();
           updateReservationLog();
         };
