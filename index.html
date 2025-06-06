@@ -218,14 +218,18 @@
         entryButton.textContent = res.reserved ? "エントリー済み" : "エントリー";
         entryButton.disabled = res.reserved;
         entryButton.onclick = () => {
-          const reservationRef = firebase.database().ref('reservations/' + res.id);
-          reservationRef.child("entries").push(userName);  // pushで追加
-
+          const entryRef = firebase.database().ref('reservations/' + res.id + '/entries');
+          const newEntry = {
+            userName: userName,
+            timestamp: Date.now()
+          };
+          entryRef.push(newEntry);
+          
           res.reserved = true;
           res.userName = userName;
           alert(`${userName} さんが ${res.store} にエントリーしました。`);
           localStorage.setItem("reservations", JSON.stringify(reservations));
-          firebase.database().ref('reservations/' + res.id + '/entries').push(userName);
+          
           renderReservations();
           updateReservationLog();
         };
@@ -236,8 +240,8 @@
         cancelButton.textContent = "キャンセル";
         cancelButton.style.display = res.reserved ? "block" : "none";
         cancelButton.onclick = () => {
-          const reservationRef = firebase.database().ref('reservations/' + res.id + '/entries');
-          reservationRef.once('value', snapshot => {
+          const entryRef = firebase.database().ref('reservations/' + res.id + '/entries');
+          entryRef.once('value', snapshot => {
             snapshot.forEach(child => {
               if (child.val() === userName) {
                 child.ref.remove(); // 一致する名前のエントリーを削除
@@ -249,7 +253,7 @@
           res.userName = "";
           alert(`${userName} さんの予約をキャンセルしました。`);
           localStorage.setItem("reservations", JSON.stringify(reservations));
-          firebase.database().ref('reservations/' + res.id + '/entries').set(userName); //エラー
+          
           renderReservations();
           updateReservationLog();
         };
