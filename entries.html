@@ -69,16 +69,22 @@
 
       for (let id in reservations) {
         const res = reservations[id];
-        if (res.reserved) {
+        const entries = res.entries || {};
+        
+        const names = Object.values(entries);
+        if (names.length > 0) {
           hasEntry = true;
+
           const card = document.createElement("div");
           card.className = "card";
+
           card.innerHTML = `
             <p><strong>日付:</strong> ${res.date}</p>
             <p><strong>店舗名:</strong> ${res.store}</p>
             <p><strong>住所:</strong> ${res.address}</p>
-            <p><strong>予約者:</strong> <span class="user-name">${res.userName}</span></p>
+            <p><strong>予約者:</strong> ${names.map(name => `<span class="user-name">${name}</span>`).join(", ")}</p>
           `;
+
           entryList.appendChild(card);
         }
       }
