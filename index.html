@@ -225,15 +225,7 @@
         entryButton.textContent = res.reserved ? "エントリー済み" : "エントリー";
         entryButton.disabled = res.reserved;
         entryButton.onclick = () => {
-          const reservationPath = 'reservations/' + res.id;
-
-          // 予約データを一式保存（初回のみ上書き）
-          firebase.database().ref(reservationPath).update({
-            date: res.date,
-            store: res.store,
-            address: res.address
-          });
-          firebase.database().ref(reservationPath + '/entries').push(userName);
+          firebase.database().ref('reservations/' + res.id + '/entries').push(userName);
           
           res.reserved = true; // 見た目の切り替えに使用
           res.userName = userName;
@@ -312,6 +304,16 @@
     window.onload = () => {
       const savedName = localStorage.getItem("userName");
       const savedReservations = localStorage.getItem("reservations");
+
+      reservations.forEach(res => {
+        const reservationPath = 'reservations/' + res.id;
+        firebase.database().ref(reservationPath).update({
+          id: res.id,
+          date: res.date,
+          store: res.store,
+          address: res.address
+        });
+      });
 
       if (savedName) {
         userName = savedName;
