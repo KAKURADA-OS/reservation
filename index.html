@@ -225,6 +225,14 @@
         entryButton.textContent = res.reserved ? "エントリー済み" : "エントリー";
         entryButton.disabled = res.reserved;
         entryButton.onclick = () => {
+          const reservationPath = 'reservations/' + res.id;
+
+          // 予約データを一式保存（初回のみ上書き）
+          firebase.database().ref(reservationPath).update({
+            date: res.date,
+            store: res.store,
+            address: res.address
+          });
           firebase.database().ref('reservations/' + res.id + '/entries').push(userName);
           
           res.reserved = true; // 見た目の切り替えに使用
