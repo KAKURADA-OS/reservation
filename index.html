@@ -313,8 +313,8 @@
         if (savedReservations) {
           const parsedReservations = JSON.parse(savedReservations);
           for (let i = 0; i < reservations.length; i++) {
-            reservations[i].reserved = parsedReservations[i]?.reserved || false;
-            reservations[i].userName = parsedReservations[i]?.userName || "";
+            reservations[i].reserved = parsedReservations[i].reserved || false;
+            reservations[i].userName = parsedReservations[i].userName || "";
           }
         }
 
