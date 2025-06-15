@@ -158,7 +158,6 @@
         store: "サンプルカフェ東京店",
         address: "東京都渋谷区○○1-2-3",
         reserved: false
-        maxEntries: 2
       },
       {
         id: 2,
@@ -166,7 +165,6 @@
         store: "サンプルカフェ新宿店",
         address: "東京都新宿区△△4-5-6",
         reserved: false
-        maxEntries: 2
       },
       {
         id: 3,
@@ -174,7 +172,6 @@
         store: "サンプルカフェ新宿店",
         address: "東京都新宿区△△4-5-6",
         reserved: false
-        maxEntries: 2
       },
       {
         id: 4,
@@ -182,7 +179,6 @@
         store: "サンプルカフェ新宿店",
         address: "東京都新宿区△△4-5-6",
         reserved: false
-        maxEntries: 2
       },
       {
         id: 5,
@@ -190,7 +186,6 @@
         store: "サンプルカフェ新宿店",
         address: "東京都新宿区△△4-5-6",
         reserved: false
-        maxEntries: 2
       }
     ];
 
@@ -231,14 +226,12 @@
         entryButton.disabled = res.reserved;
         entryButton.onclick = () => {
           firebase.database().ref('reservations/' + res.id + '/entries').push(userName);
-
-        
           
           res.reserved = true; // 見た目の切り替えに使用
           res.userName = userName;
           localStorage.setItem("reservations", JSON.stringify(reservations));
 
-          alert(`${userName} さんが ${res.store} にエントリーしました。`);
+          alert(${userName} さんが ${res.store} にエントリーしました。);
           renderReservations();
           updateReservationLog();
         };
@@ -263,18 +256,18 @@
           res.reserved = false;
           res.userName = "";
           localStorage.setItem("reservations", JSON.stringify(reservations));
-          alert(`${userName} さんの予約をキャンセルしました。`);
+          alert(${userName} さんの予約をキャンセルしました。);
           renderReservations();
           updateReservationLog();
         };
 
 
       <!--
-        card.innerHTML = `
+        card.innerHTML = 
           <p><strong>日付:</strong> ${res.date}</p>
           <p><strong>店舗名:</strong> ${res.store}</p>
           <p><strong>住所:</strong> ${res.address}</p>
-        `;
+        ;
         card.appendChild(entryButton);
         card.appendChild(cancelButton);
         container.appendChild(card);
@@ -293,13 +286,13 @@
         return;
       }
 
-      log.innerHTML = reserved.map(r => `
+      log.innerHTML = reserved.map(r => 
         <!-- <p><strong>名前:</strong> ${userName}</p> -->
         <p><strong>日付:</strong> ${r.date}</p>
         <p><strong>店舗名:</strong> ${r.store}</p>
         <p><strong>住所:</strong> ${r.address}</p>
         <hr>
-      `).join("");
+      ).join("");
     }
 
     function showReservationLog() {
@@ -319,7 +312,6 @@
           date: res.date,
           store: res.store,
           address: res.address
-          maxEntries: res.maxEntries || 3
         });
       });
 
