@@ -230,7 +230,7 @@
         entryButton.textContent = res.reserved ? "エントリー済み" : "エントリー";
         entryButton.disabled = res.reserved;
         entryButton.onclick = () => {
-          //firebase.database().ref('reservations/' + res.id + '/entries').push(userName);
+          
 
           const entryRef = firebase.database().ref('reservations/' + res.id + '/entries');
           entryRef.once('value', snapshot => {
