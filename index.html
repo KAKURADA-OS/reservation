@@ -230,32 +230,17 @@
         entryButton.textContent = res.reserved ? "エントリー済み" : "エントリー";
         entryButton.disabled = res.reserved;
         entryButton.onclick = () => {
+          firebase.database().ref('reservations/' + res.id + '/entries').push(userName);
+
+        
           
+          res.reserved = true; // 見た目の切り替えに使用
+          res.userName = userName;
+          localStorage.setItem("reservations", JSON.stringify(reservations));
 
-          const entryRef = firebase.database().ref('reservations/' + res.id + '/entries');
-          entryRef.once('value', snapshot => {
-            const currentEntries = snapshot.numChildren();
-
-            firebase.database().ref('reservations/' + res.id + '/maxEntries').once('value', maxSnapshot => {
-              const max = maxSnapshot.val() || 1;
-
-              if (currentEntries >= max) {
-                alert("この店舗の予約上限に達しました。");
-                return;
-              }
-
-              // エントリー登録
-              entryRef.push(userName);
-          
-              res.reserved = true; // 見た目の切り替えに使用
-              res.userName = userName;
-              localStorage.setItem("reservations", JSON.stringify(reservations));
-
-              alert(`${userName} さんが ${res.store} にエントリーしました。`);
-              renderReservations();
-              updateReservationLog();
-            });
-          });
+          alert(`${userName} さんが ${res.store} にエントリーしました。`);
+          renderReservations();
+          updateReservationLog();
         };
 
 
