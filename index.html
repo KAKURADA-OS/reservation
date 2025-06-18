@@ -262,7 +262,7 @@
         };
 
 
-      
+      <!--
         card.innerHTML = 
           <p><strong>日付:</strong> ${res.date}</p>
           <p><strong>店舗名:</strong> ${res.store}</p>
@@ -271,6 +271,7 @@
         card.appendChild(entryButton);
         card.appendChild(cancelButton);
         container.appendChild(card);
+      -->
 
       }); 
       
@@ -286,6 +287,7 @@
       }
 
       log.innerHTML = reserved.map(r => 
+        <!-- <p><strong>名前:</strong> ${userName}</p> -->
         <p><strong>日付:</strong> ${r.date}</p>
         <p><strong>店舗名:</strong> ${r.store}</p>
         <p><strong>住所:</strong> ${r.address}</p>
