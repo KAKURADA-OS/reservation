@@ -78,12 +78,12 @@
           const card = document.createElement("div");
           card.className = "card";
 
-          card.innerHTML = 
+          card.innerHTML = `
             <p><strong>日付:</strong> ${res.date}</p>
             <p><strong>店舗名:</strong> ${res.store}</p>
             <p><strong>住所:</strong> ${res.address}</p>
-            <p><strong>予約者:</strong> ${names.map(name => <span class="user-name">${name}</span>).join("<br>　　　&nbsp;")}</p>
-          ;
+            <p><strong>予約者:</strong> ${names.map(name => `<span class="user-name">${name}</span>`).join(", ")}</p>
+          `;
 
           entryList.appendChild(card);
         }
