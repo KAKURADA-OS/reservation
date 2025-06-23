@@ -227,11 +227,12 @@
         entryButton.onclick = () => {
           firebase.database().ref('reservations/' + res.id + '/entries').push(userName);
           
+          
           res.reserved = true; // 見た目の切り替えに使用
           res.userName = userName;
           localStorage.setItem("reservations", JSON.stringify(reservations));
 
-          alert(${userName} さんが ${res.store} にエントリーしました。);
+          alert(`${userName} さんが ${res.store} にエントリーしました。`);
           renderReservations();
           updateReservationLog();
         };
@@ -256,18 +257,18 @@
           res.reserved = false;
           res.userName = "";
           localStorage.setItem("reservations", JSON.stringify(reservations));
-          alert(${userName} さんの予約をキャンセルしました。);
+          alert(`${userName} さんの予約をキャンセルしました。`);
           renderReservations();
           updateReservationLog();
         };
 
 
       <!--
-        card.innerHTML = 
+        card.innerHTML = `
           <p><strong>日付:</strong> ${res.date}</p>
           <p><strong>店舗名:</strong> ${res.store}</p>
           <p><strong>住所:</strong> ${res.address}</p>
-        ;
+        `;
         card.appendChild(entryButton);
         card.appendChild(cancelButton);
         container.appendChild(card);
@@ -286,13 +287,13 @@
         return;
       }
 
-      log.innerHTML = reserved.map(r => 
+      log.innerHTML = reserved.map(r => `
         <!-- <p><strong>名前:</strong> ${userName}</p> -->
         <p><strong>日付:</strong> ${r.date}</p>
         <p><strong>店舗名:</strong> ${r.store}</p>
         <p><strong>住所:</strong> ${r.address}</p>
         <hr>
-      ).join("");
+      `).join("");
     }
 
     function showReservationLog() {
@@ -305,16 +306,6 @@
       const savedName = localStorage.getItem("userName");
       const savedReservations = localStorage.getItem("reservations");
 
-      reservations.forEach(res => {
-        const reservationPath = 'reservations/' + res.id;
-        firebase.database().ref(reservationPath).update({
-          id: res.id,
-          date: res.date,
-          store: res.store,
-          address: res.address
-        });
-      });
-
       if (savedName) {
         userName = savedName;
         document.getElementById("nameContainer").style.display = "none";
@@ -323,8 +314,8 @@
         if (savedReservations) {
           const parsedReservations = JSON.parse(savedReservations);
           for (let i = 0; i < reservations.length; i++) {
-            reservations[i].reserved = parsedReservations[i].reserved || false;
-            reservations[i].userName = parsedReservations[i].userName || "";
+            reservations[i].reserved = parsedReservations[i]?.reserved || false;
+            reservations[i].userName = parsedReservations[i]?.userName || "";
           }
         }
 
