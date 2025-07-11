@@ -130,8 +130,10 @@
 
   <div class="container" id="nameContainer">
     <div class="card">
-      <label for="userName">お名前を入力してください：</label>
-      <input type="text" id="userName" placeholder="例：山田 太郎" style="width: 94%; padding: 10px; margin-top: 5px;">
+      <label for="lastName">姓を入力してください：</label>
+      <input type="text" id="lastName" placeholder="例：山田" style="width: 94%; padding: 10px; margin-top: 5px;">
+      <label for="firstName" style="margin-top: 10px; display: block;">名を入力してください：</label>
+      <input type="text" id="firstName" placeholder="例：太郎" style="width: 94%; padding: 10px; margin-top: 5px;">
       <button class="button register-button" onclick="registerName()">登録</button>
     </div>
   </div>
@@ -194,12 +196,14 @@
     }
 
     function registerName() {
-      const input = document.getElementById("userName").value.trim();
-      if (!input) {
-        alert("名前を入力してください。");
+      const lastName = document.getElementById("lastName").value.trim();
+      const firstName = document.getElementById("firstName").value.trim();
+
+      if (!lastName || !firstName) {
+        alert("姓と名の両方を入力してください。");
         return;
       }
-      userName = input;
+      userName = lastName + " " + firstName; // 姓と名を半角スペースで結合
       localStorage.setItem("userName", userName);
       alert(userName + " さんの名前を登録しました。");
 
