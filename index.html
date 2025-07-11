@@ -149,13 +149,13 @@
 
   <script>
     let userName = "";
+    // 予約の基本情報（ID、日付、店舗など）は固定で定義
     const reservations = [
       {
         id: 1,
         date: "2025年6月15日",
         store: "サンプルカフェ東京店",
         address: "東京都渋谷区○○1-2-3",
-        reserved: false,
         maxEntries: 2
       },
       {
@@ -163,7 +163,6 @@
         date: "2025年6月15日",
         store: "サンプルカフェ新宿店",
         address: "東京都新宿区△△4-5-6",
-        reserved: false,
         maxEntries: 3
       },
       {
@@ -171,7 +170,6 @@
         date: "2025年6月15日",
         store: "サンプルカフェ新宿店",
         address: "東京都新宿区△△4-5-6",
-        reserved: false,
         maxEntries: 1
       },
       {
@@ -179,7 +177,6 @@
         date: "2025年6月15日",
         store: "サンプルカフェ新宿店",
         address: "東京都新宿区△△4-5-6",
-        reserved: false,
         maxEntries: 5
       },
       {
@@ -187,7 +184,6 @@
         date: "2025年6月15日",
         store: "サンプルカフェ新宿店",
         address: "東京都新宿区△△4-5-6",
-        reserved: false,
         maxEntries: 2
       }
     ];
@@ -200,7 +196,7 @@
       document.getElementById("sidebar").style.width = "0";
     }
 
-    async function registerName() { // async を追加
+    async function registerName() {
       const input = document.getElementById("userName").value.trim();
       if (!input) {
         alert("名前を入力してください。");
@@ -212,8 +208,8 @@
 
       document.getElementById("nameContainer").style.display = "none";
       document.getElementById("reservationContainer").style.display = "flex";
-      await renderReservations(); // await を追加
-      updateReservationLog(); // renderReservations完了後に呼び出し
+      await renderReservations(); // renderReservationsが完了するのを待つ
+      await updateReservationLog(); // updateReservationLogも完了するのを待つ
     }
 
     async function renderReservations() {
@@ -233,15 +229,17 @@
         cancelButton.textContent = "キャンセル";
         cancelButton.style.display = "none";
 
-        // Firebaseから現在のエントリー人数を取得
+        // Firebaseから現在のエントリー人数を取得し、ユーザーが予約済みか確認
         const snapshot = await firebase.database().ref('reservations/' + res.id + '/entries').once('value');
-        const currentEntries = snapshot.val() ? Object.keys(snapshot.val()).length : 0;
-        const isUserReserved = snapshot.val() ? Object.values(snapshot.val()).includes(userName) : false;
+        const entriesData = snapshot.val();
+        const currentEntries = entriesData ? Object.keys(entriesData).length : 0;
+        const isUserReserved = entriesData ? Object.values(entriesData).includes(userName) : false;
 
-        res.reserved = isUserReserved;
+        // ここでresオブジェクトに一時的にreserved状態を持たせる（updateReservationLogが使用するため）
+        res.reserved = isUserReserved; 
 
         // エントリーボタンの表示と有効/無効の制御
-        if (res.reserved) {
+        if (isUserReserved) { // isUserReserved を直接使う
             entryButton.textContent = "エントリー済み";
             entryButton.disabled = true;
             cancelButton.style.display = "block";
@@ -259,13 +257,27 @@
         }
 
         entryButton.onclick = async () => {
-            if (currentEntries < res.maxEntries) {
-                await firebase.database().ref('reservations/' + res.id + '/entries').push(userName);
-                alert(`${userName} さんが ${res.store} にエントリーしました。`);
-                renderReservations(); // 状態を更新するために再描画
-                updateReservationLog();
+            // 再度現在のエントリー状況を確認
+            const currentSnapshot = await firebase.database().ref('reservations/' + res.id + '/entries').once('value');
+            const currentEntriesAfterClick = currentSnapshot.val() ? Object.keys(currentSnapshot.val()).length : 0;
+
+            if (currentEntriesAfterClick < res.maxEntries) {
+                // 同じ名前が既にエントリーされているか再確認
+                const alreadyReservedSnapshot = await firebase.database().ref('reservations/' + res.id + '/entries').once('value');
+                const alreadyReserved = alreadyReservedSnapshot.val() ? Object.values(alreadyReservedSnapshot.val()).includes(userName) : false;
+
+                if (!alreadyReserved) {
+                    await firebase.database().ref('reservations/' + res.id + '/entries').push(userName);
+                    alert(`${userName} さんが ${res.store} にエントリーしました。`);
+                    renderReservations(); // 状態を更新するために再描画
+                    updateReservationLog();
+                } else {
+                    alert(`${userName} さんは既にこの予約にエントリー済みです。`);
+                    renderReservations(); // 状態を更新するために再描画
+                }
             } else {
                 alert("この予約は満員です。");
+                renderReservations(); // 状態を更新するために再描画
             }
         };
 
@@ -279,7 +291,7 @@
             });
           });
 
-          res.reserved = false;
+          // res.reserved = false; // Firebaseから最新状態を取得するので、ローカルの更新は必須ではないが、一貫性のため残す
           alert(`${userName} さんの予約をキャンセルしました。`);
           renderReservations(); // 状態を更新するために再描画
           updateReservationLog();
@@ -296,21 +308,40 @@
       }
     }
 
-    function updateReservationLog() {
+    // 予約ログをFirebaseから直接取得して表示するように変更
+    async function updateReservationLog() { // async を追加
       const log = document.getElementById("logContent");
-      const reserved = reservations.filter(r => r.reserved);
+      let userHasReservations = false;
+      let logHtml = "";
 
-      if (reserved.length === 0) {
-        log.innerHTML = "<p>まだ予約はありません。</p>";
+      if (!userName) {
+        log.innerHTML = "<p>名前を登録してください。</p>";
         return;
       }
 
-      log.innerHTML = reserved.map(r => `
-        <p><strong>日付:</strong> ${r.date}</p>
-        <p><strong>店舗名:</strong> ${r.store}</p>
-        <p><strong>住所:</strong> ${r.address}</p>
-        <hr>
-      `).join("");
+      for (const res of reservations) {
+        const snapshot = await firebase.database().ref('reservations/' + res.id + '/entries').once('value');
+        const entriesData = snapshot.val();
+        
+        // 現在のユーザーがこの予約にエントリーしているか確認
+        const isUserReserved = entriesData ? Object.values(entriesData).includes(userName) : false;
+
+        if (isUserReserved) {
+          userHasReservations = true;
+          logHtml += `
+            <p><strong>日付:</strong> ${res.date}</p>
+            <p><strong>店舗名:</strong> ${res.store}</p>
+            <p><strong>住所:</strong> ${res.address}</p>
+            <hr>
+          `;
+        }
+      }
+
+      if (userHasReservations) {
+        log.innerHTML = logHtml;
+      } else {
+        log.innerHTML = "<p>まだ予約はありません。</p>";
+      }
     }
 
     function showReservationLog() {
@@ -326,8 +357,8 @@
         userName = savedName;
         document.getElementById("nameContainer").style.display = "none";
         document.getElementById("reservationContainer").style.display = "flex";
-        await renderReservations(); // await を追加
-        updateReservationLog(); // renderReservations完了後に呼び出し
+        await renderReservations(); // renderReservationsが完了するのを待つ
+        await updateReservationLog(); // updateReservationLogも完了するのを待つ
       }
     };
 
