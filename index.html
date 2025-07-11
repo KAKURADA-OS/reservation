@@ -233,7 +233,7 @@
         const currentEntries = snapshot.val() ? Object.keys(snapshot.val()).length : 0;
         const isUserReserved = snapshot.val() ? Object.values(snapshot.val()).includes(userName) : false;
 
-        res.reserved = isUserReserved; // localStorageだけでなくFirebaseのデータも参照して状態を更新
+        res.reserved = isUserReserved;
 
         // エントリーボタンの表示と有効/無効の制御
         if (res.reserved) {
@@ -241,10 +241,10 @@
             entryButton.disabled = true;
             cancelButton.style.display = "block";
         } else if (currentEntries >= res.maxEntries) {
-            entryButton.textContent = "満員";
+            entryButton.textContent = "受付終了";
             entryButton.disabled = true;
         } else {
-            entryButton.textContent = `エントリー (${currentEntries}/${res.maxEntries})`;
+            entryButton.textContent = `エントリー`;
             entryButton.disabled = false;
         }
 
@@ -289,10 +289,6 @@
     }
 
     function updateReservationLog() {
-      // この関数はlocalStorageのreservationsに依存しているので、
-      // Firebaseから直接データを取得して表示するように変更する必要があります。
-      // 現状はlocalStorageに依存したままにしておきますが、
-      // 厳密にはFirebaseからの最新データで更新すべきです。
       const log = document.getElementById("logContent");
       const reserved = reservations.filter(r => r.reserved);
 
@@ -322,7 +318,7 @@
         userName = savedName;
         document.getElementById("nameContainer").style.display = "none";
         document.getElementById("reservationContainer").style.display = "flex";
-        renderReservations(); // 名前が保存されていれば予約一覧を表示
+        renderReservations();
       }
     };
 
