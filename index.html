@@ -245,9 +245,13 @@
         } else if (currentEntries >= res.maxEntries) {
             entryButton.textContent = "受付終了";
             entryButton.disabled = true;
+          　entryButton.classList.remove('entry-button');
+            entryButton.classList.add('closed-button');
         } else {
             entryButton.textContent = `エントリー`;
             entryButton.disabled = false;
+          　entryButton.classList.remove('closed-button');
+            entryButton.classList.add('entry-button');
         }
 
         entryButton.onclick = async () => {
