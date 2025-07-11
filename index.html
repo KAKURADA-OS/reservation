@@ -116,6 +116,25 @@
     .reservation-log h3 {
       margin-top: 0;
     }
+
+    .card label[for="userName"] { /* "名前を入力してください"のラベル */
+      display: block; /* ラベルをブロック要素にして、入力ボックスを新しい行に */
+      margin-bottom: 10px; /* ラベルと入力ボックスの間隔 */
+    }
+
+    .card input[type="text"] {
+      width: calc(50% - 10px); /* 50%幅からパディングとマージンを考慮して調整 */
+      padding: 10px;
+      box-sizing: border-box; /* パディングをwidthに含める */
+      display: inline-block; /* 横並びにする */
+      vertical-align: top; /* 垂直方向のずれを防ぐ */
+      margin-bottom: 10px; /* 入力ボックスとボタンの間隔 */
+    }
+
+    .card #lastName {
+      margin-right: 10px; /* 姓と名の間隔 */
+    }
+
   </style>
 </head>
 <body>
@@ -130,9 +149,9 @@
 
   <div class="container" id="nameContainer">
     <div class="card">
-      <label for="lastName">名前を入力してください：</label>
-      <input type="text" id="lastName" placeholder="姓" style="width: 47%; padding: 10px; margin-top: 5px;">
-      <input type="text" id="firstName" placeholder="名" style="width: 47%; padding: 10px; margin-top: 5px;">
+      <label for="userName">名前を入力してください：</label>
+      <input type="text" id="lastName" placeholder="姓">
+      <input type="text" id="firstName" placeholder="名">
       <button class="button register-button" onclick="registerName()">登録</button>
     </div>
   </div>
@@ -202,7 +221,7 @@
         alert("姓と名の両方を入力してください。");
         return;
       }
-      userName = lastName + " " + firstName; // 姓と名を半角スペースで結合
+      userName = lastName + " " + firstName;
       localStorage.setItem("userName", userName);
       alert(userName + " さんの名前を登録しました。");
 
