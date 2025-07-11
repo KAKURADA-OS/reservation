@@ -207,7 +207,7 @@
         return;
       }
       userName = input;
-      // localStorage.setItem("userName", userName); // localStorage 削除
+      localStorage.setItem("userName", userName); // 名前をlocalStorageに保存
       alert(userName + " さんの名前を登録しました。");
 
       document.getElementById("nameContainer").style.display = "none";
@@ -279,8 +279,6 @@
           });
 
           res.reserved = false;
-          // res.userName = ""; // localStorage 削除に伴い不要
-          // localStorage.setItem("reservations", JSON.stringify(reservations)); // localStorage 削除
           alert(`${userName} さんの予約をキャンセルしました。`);
           renderReservations(); // 状態を更新するために再描画
           updateReservationLog();
@@ -299,9 +297,6 @@
 
     function updateReservationLog() {
       const log = document.getElementById("logContent");
-      // この関数は現在、renderReservationsによって更新されたローカルのreservations配列に依存しています。
-      // 全てFirebaseから取得する場合は、この関数もFirebaseからデータを読み込むように変更が必要です。
-      // 今回の修正では、localStorageの削除に焦点を当てています。
       const reserved = reservations.filter(r => r.reserved);
 
       if (reserved.length === 0) {
@@ -324,26 +319,15 @@
     }
 
     window.onload = () => {
-      // const savedName = localStorage.getItem("userName"); // localStorage 削除
-      // const savedReservations = localStorage.getItem("reservations"); // localStorage 削除
-
-      // localStorageから名前を読み込まないため、常に名前入力画面が表示されます。
-      // if (savedName) { // localStorage 削除により常にfalse
-      //   userName = savedName;
-      //   document.getElementById("nameContainer").style.display = "none";
-      //   document.getElementById("reservationContainer").style.display = "flex";
-
-      //   if (savedReservations) {
-      //     const parsedReservations = JSON.parse(savedReservations);
-      //     for (let i = 0; i < reservations.length; i++) {
-      //       reservations[i].reserved = parsedReservations[i]?.reserved || false;
-      //       reservations[i].userName = parsedReservations[i]?.userName || "";
-      //     }
-      //   }
-      //   renderReservations();
-      //   updateReservationLog();
-      // }
-      // 名前入力コンテナはHTMLのデフォルトで表示されるため、特別な処理は不要です。
+      const savedName = localStorage.getItem("userName"); // localStorageから名前を取得
+      
+      if (savedName) {
+        userName = savedName;
+        document.getElementById("nameContainer").style.display = "none";
+        document.getElementById("reservationContainer").style.display = "flex";
+        renderReservations(); // 名前が保存されていれば予約一覧を表示
+        updateReservationLog(); // 予約ログも更新
+      }
     };
 
   </script>
