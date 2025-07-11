@@ -200,7 +200,7 @@
       document.getElementById("sidebar").style.width = "0";
     }
 
-    function registerName() {
+    async function registerName() { // async を追加
       const input = document.getElementById("userName").value.trim();
       if (!input) {
         alert("名前を入力してください。");
@@ -212,7 +212,8 @@
 
       document.getElementById("nameContainer").style.display = "none";
       document.getElementById("reservationContainer").style.display = "flex";
-      renderReservations();
+      await renderReservations(); // await を追加
+      updateReservationLog(); // renderReservations完了後に呼び出し
     }
 
     async function renderReservations() {
@@ -318,15 +319,15 @@
       window.scrollTo(0, document.body.scrollHeight);
     }
 
-    window.onload = () => {
+    window.onload = async () => { // async を追加
       const savedName = localStorage.getItem("userName"); // localStorageから名前を取得
       
       if (savedName) {
         userName = savedName;
         document.getElementById("nameContainer").style.display = "none";
         document.getElementById("reservationContainer").style.display = "flex";
-        renderReservations(); // 名前が保存されていれば予約一覧を表示
-        updateReservationLog(); // 予約ログも更新
+        await renderReservations(); // await を追加
+        updateReservationLog(); // renderReservations完了後に呼び出し
       }
     };
 
