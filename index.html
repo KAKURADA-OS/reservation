@@ -118,30 +118,24 @@
 </head>
 <body>
 
-  <!-- ハンバーガーメニュー -->
   <div class="menu-icon" onclick="openSidebar()">☰</div>
   <div id="sidebar" class="sidebar">
     <a href="javascript:void(0)" onclick="closeSidebar()">✕ 閉じる</a>
-    <!-- <a href="javascript:void(0)" onclick="showReservationLog()">予約一覧</a> -->
     <a href="list.html">予約一覧</a>
-    <!-- <a href="name.html">名前の変更</a> -->
-    <!--<a href="entries.html">予約者一覧</a>-->
+    <a href="entries.html">予約者一覧</a>
 
   </div>
 
-  <!-- 名前入力 -->
   <div class="container" id="nameContainer">
     <div class="card">
       <label for="userName">お名前を入力してください：</label>
-      <input type="text" id="userName" placeholder="例：山田 太郎" style="width: 100%; padding: 10px; margin-top: 5px;">
+      <input type="text" id="userName" placeholder="例：山田 太郎" style="width: 94%; padding: 10px; margin-top: 5px;">
       <button class="button register-button" onclick="registerName()">登録</button>
     </div>
   </div>
 
-  <!-- 予約カード一覧 -->
   <div class="container" id="reservationContainer" style="display: none;"></div>
 
-  <!-- 予約一覧 -->
   <div id="reservationLog" class="reservation-log">
     <h3>予約一覧</h3>
     <div id="logContent">
@@ -157,35 +151,40 @@
         date: "2025年6月15日",
         store: "サンプルカフェ東京店",
         address: "東京都渋谷区○○1-2-3",
-        reserved: false
+        reserved: false,
+        maxEntries: 2 // ここに最大エントリー人数を追加
       },
       {
         id: 2,
         date: "2025年6月15日",
         store: "サンプルカフェ新宿店",
         address: "東京都新宿区△△4-5-6",
-        reserved: false
+        reserved: false,
+        maxEntries: 3 // ここに最大エントリー人数を追加
       },
       {
         id: 3,
         date: "2025年6月15日",
         store: "サンプルカフェ新宿店",
         address: "東京都新宿区△△4-5-6",
-        reserved: false
+        reserved: false,
+        maxEntries: 1
       },
       {
         id: 4,
         date: "2025年6月15日",
         store: "サンプルカフェ新宿店",
         address: "東京都新宿区△△4-5-6",
-        reserved: false
+        reserved: false,
+        maxEntries: 5
       },
       {
         id: 5,
         date: "2025年6月15日",
         store: "サンプルカフェ新宿店",
         address: "東京都新宿区△△4-5-6",
-        reserved: false
+        reserved: false,
+        maxEntries: 2
       }
     ];
 
@@ -212,41 +211,57 @@
       renderReservations();
     }
 
-    function renderReservations() {
+    async function renderReservations() {
       const container = document.getElementById("reservationContainer");
       container.innerHTML = "";
 
-      reservations.forEach((res, index) => {
+      for (const res of reservations) {
         const card = document.createElement("div");
         card.className = "card";
 
         const entryButton = document.createElement("button");
         entryButton.className = "button entry-button";
-        entryButton.textContent = res.reserved ? "エントリー済み" : "エントリー";
-        entryButton.disabled = res.reserved;
-        entryButton.onclick = () => {
-          firebase.database().ref('reservations/' + res.id + '/entries').push(userName);
-          
-          
-          res.reserved = true; // 見た目の切り替えに使用
-          res.userName = userName;
-          localStorage.setItem("reservations", JSON.stringify(reservations));
-
-          alert(`${userName} さんが ${res.store} にエントリーしました。`);
-          renderReservations();
-          updateReservationLog();
-        };
-
-
-
+        entryButton.textContent = "エントリー";
+        
         const cancelButton = document.createElement("button");
         cancelButton.className = "button cancel-button";
         cancelButton.textContent = "キャンセル";
-        cancelButton.style.display = res.reserved ? "block" : "none";
-        cancelButton.onclick = () => {
-          const reservationRef = firebase.database().ref('reservations/' + res.id + '/entries');
+        cancelButton.style.display = "none";
 
-          reservationRef.once('value', snapshot => {
+        // Firebaseから現在のエントリー人数を取得
+        const snapshot = await firebase.database().ref('reservations/' + res.id + '/entries').once('value');
+        const currentEntries = snapshot.val() ? Object.keys(snapshot.val()).length : 0;
+        const isUserReserved = snapshot.val() ? Object.values(snapshot.val()).includes(userName) : false;
+
+        res.reserved = isUserReserved; // localStorageだけでなくFirebaseのデータも参照して状態を更新
+
+        // エントリーボタンの表示と有効/無効の制御
+        if (res.reserved) {
+            entryButton.textContent = "エントリー済み";
+            entryButton.disabled = true;
+            cancelButton.style.display = "block";
+        } else if (currentEntries >= res.maxEntries) {
+            entryButton.textContent = "満員";
+            entryButton.disabled = true;
+        } else {
+            entryButton.textContent = `エントリー (${currentEntries}/${res.maxEntries})`;
+            entryButton.disabled = false;
+        }
+
+        entryButton.onclick = async () => {
+            if (currentEntries < res.maxEntries) {
+                await firebase.database().ref('reservations/' + res.id + '/entries').push(userName);
+                alert(`${userName} さんが ${res.store} にエントリーしました。`);
+                renderReservations(); // 状態を更新するために再描画
+                updateReservationLog();
+            } else {
+                alert("この予約は満員です。");
+            }
+        };
+
+        cancelButton.onclick = async () => {
+          const reservationRef = firebase.database().ref('reservations/' + res.id + '/entries');
+          await reservationRef.once('value', snapshot => {
             snapshot.forEach(child => {
               if (child.val() === userName) {
                 child.ref.remove(); // 一致する名前のエントリーを削除
@@ -255,10 +270,10 @@
           });
 
           res.reserved = false;
-          res.userName = "";
-          localStorage.setItem("reservations", JSON.stringify(reservations));
+          res.userName = ""; // Firebaseから削除した場合はローカルの状態もクリア
+          localStorage.setItem("reservations", JSON.stringify(reservations)); // ローカルストレージも更新
           alert(`${userName} さんの予約をキャンセルしました。`);
-          renderReservations();
+          renderReservations(); // 状態を更新するために再描画
           updateReservationLog();
         };
 
@@ -270,21 +285,23 @@
         card.appendChild(entryButton);
         card.appendChild(cancelButton);
         container.appendChild(card);
-      
-      }); 
+      }
     }
 
     function updateReservationLog() {
+      // この関数はlocalStorageのreservationsに依存しているので、
+      // Firebaseから直接データを取得して表示するように変更する必要があります。
+      // 現状はlocalStorageに依存したままにしておきますが、
+      // 厳密にはFirebaseからの最新データで更新すべきです。
       const log = document.getElementById("logContent");
       const reserved = reservations.filter(r => r.reserved);
 
       if (reserved.length === 0) {
-        log.innerHTML = "<p>まだ予約はありません</p>";
+        log.innerHTML = "<p>まだ予約はありません。</p>";
         return;
       }
 
       log.innerHTML = reserved.map(r => `
-        <!-- <p><strong>名前:</strong> ${userName}</p> -->
         <p><strong>日付:</strong> ${r.date}</p>
         <p><strong>店舗名:</strong> ${r.store}</p>
         <p><strong>住所:</strong> ${r.address}</p>
@@ -300,23 +317,12 @@
 
     window.onload = () => {
       const savedName = localStorage.getItem("userName");
-      const savedReservations = localStorage.getItem("reservations");
-
+      
       if (savedName) {
         userName = savedName;
         document.getElementById("nameContainer").style.display = "none";
         document.getElementById("reservationContainer").style.display = "flex";
-
-        if (savedReservations) {
-          const parsedReservations = JSON.parse(savedReservations);
-          for (let i = 0; i < reservations.length; i++) {
-            reservations[i].reserved = parsedReservations[i]?.reserved || false;
-            reservations[i].userName = parsedReservations[i]?.userName || "";
-          }
-        }
-
-        renderReservations();
-        updateReservationLog();
+        renderReservations(); // 名前が保存されていれば予約一覧を表示
       }
     };
 
