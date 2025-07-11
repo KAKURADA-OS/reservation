@@ -99,8 +99,10 @@
     .register-button { background-color: #28a745; }
     .entry-button    { background-color: #007BFF; }
     .cancel-button   { background-color: #dc3545; }
-    .closed-button   { background-color: #dc3545; cursor: not-allowed; } /* 少し暗いグレーに */
+    /* 新しいスタイルを追加 */
+    .closed-button   { background-color: #6c757d; cursor: not-allowed; } /* 少し暗いグレーに */
     .button:hover    { opacity: 0.9; }
+    /* closed-button の hover 効果を調整 */
     .closed-button:hover { opacity: 1; }
 
     .reservation-log {
@@ -154,7 +156,7 @@
         store: "サンプルカフェ東京店",
         address: "東京都渋谷区○○1-2-3",
         reserved: false,
-        maxEntries: 2 // ここに最大エントリー人数を追加
+        maxEntries: 2
       },
       {
         id: 2,
@@ -162,7 +164,7 @@
         store: "サンプルカフェ新宿店",
         address: "東京都新宿区△△4-5-6",
         reserved: false,
-        maxEntries: 3 // ここに最大エントリー人数を追加
+        maxEntries: 3
       },
       {
         id: 3,
@@ -222,7 +224,7 @@
         card.className = "card";
 
         const entryButton = document.createElement("button");
-        entryButton.className = "button entry-button";
+        entryButton.className = "button entry-button"; // 基本のスタイル
         entryButton.textContent = "エントリー";
         
         const cancelButton = document.createElement("button");
@@ -245,12 +247,13 @@
         } else if (currentEntries >= res.maxEntries) {
             entryButton.textContent = "受付終了";
             entryButton.disabled = true;
-          　entryButton.classList.remove('entry-button');
-            entryButton.classList.add('closed-button');
+            entryButton.classList.remove('entry-button'); // 既存の青色クラスを削除
+            entryButton.classList.add('closed-button');   // 新しい赤色クラスを追加
         } else {
             entryButton.textContent = `エントリー`;
             entryButton.disabled = false;
-          　entryButton.classList.remove('closed-button');
+            // 念のため、closed-button が残っていれば削除
+            entryButton.classList.remove('closed-button');
             entryButton.classList.add('entry-button');
         }
 
@@ -276,8 +279,7 @@
           });
 
           res.reserved = false;
-          res.userName = ""; // Firebaseから削除した場合はローカルの状態もクリア
-          localStorage.setItem("reservations", JSON.stringify(reservations)); // ローカルストレージも更新
+          // localStorage.setItem("reservations", JSON.stringify(reservations)); // ローカルストレージはFirebaseと同期するため不要
           alert(`${userName} さんの予約をキャンセルしました。`);
           renderReservations(); // 状態を更新するために再描画
           updateReservationLog();
@@ -295,8 +297,11 @@
     }
 
     function updateReservationLog() {
+      // この関数は現在、ローカルの `reservations` 配列に依存しています。
+      // Firebaseから直接データを取得するように変更することも可能ですが、
+      // 今回の修正範囲外とします。
       const log = document.getElementById("logContent");
-      const reserved = reservations.filter(r => r.reserved);
+      const reserved = reservations.filter(r => r.reserved); // ここはまだローカルのreserved状態を参照
 
       if (reserved.length === 0) {
         log.innerHTML = "<p>まだ予約はありません。</p>";
@@ -324,7 +329,7 @@
         userName = savedName;
         document.getElementById("nameContainer").style.display = "none";
         document.getElementById("reservationContainer").style.display = "flex";
-        renderReservations();
+        renderReservations(); // 名前が保存されていれば予約一覧を表示
       }
     };
 
