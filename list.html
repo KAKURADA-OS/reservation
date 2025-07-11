@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>予約一覧</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -38,28 +40,110 @@
   <div class="log-container">
     <h2>予約一覧</h2>
     <div id="logContent">
-      <p>まだ予約はありません。</p>
+      <p>予約情報を読み込み中です...</p>
     </div>
     <a href="index.html">戻る</a>
   </div>
 
   <script>
-    const reservations = JSON.parse(localStorage.getItem("reservations")) || [];
+    // Firebaseの設定をnew_index.htmlと合わせる
+    const firebaseConfig = {
+      apiKey: "AIzaSyDk0-QN1sA-JXguPHKc09uCEv0WxSuW1e0",
+      authDomain: "reservation-7ecf1.firebaseapp.com",
+      databaseURL: "https://reservation-7ecf1-default-rtdb.firebaseio.com",
+      projectId: "reservation-7ecf1",
+      storageBucket: "reservation-7ecf1.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID", // YOUR_SENDER_ID は適切な値に置き換えてください
+      appId: "YOUR_APP_ID" // YOUR_APP_ID は適切な値に置き換えてください
+    };
 
-    const log = document.getElementById("logContent");
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-    if (reservations.filter(r => r.reserved).length === 0) {
-      log.innerHTML = "<p>まだ予約はありません。</p>";
-    } else {
-      log.innerHTML = reservations.filter(r => r.reserved).map(r => `
-        <div class="reservation-entry">
-          <p><strong>日付:</strong> ${r.date}</p>
-          <p><strong>店舗名:</strong> ${r.store}</p>
-          <p><strong>住所:</strong> ${r.address}</p>
-          <hr>
-        </div>
-      `).join("");
+    let userName = ""; // ユーザー名を保持するための変数
+
+    // 予約情報の定義 (new_index.html と同じものを使用)
+    const allReservations = [
+      {
+        id: 1,
+        date: "2025年6月15日",
+        store: "サンプルカフェ渋谷店",
+        address: "東京都渋谷区○○1-2-3",
+        maxEntries: 2
+      },
+      {
+        id: 2,
+        date: "2025年6月15日",
+        store: "サンプルカフェ新宿店",
+        address: "東京都新宿区△△4-5-6",
+        maxEntries: 3
+      },
+      {
+        id: 3,
+        date: "2025年6月15日",
+        store: "サンプルカフェ練馬店",
+        address: "東京都練馬区△△4-5-6",
+        maxEntries: 1
+      },
+      {
+        id: 4,
+        date: "2025年6月15日",
+        store: "サンプルカフェ中野店",
+        address: "東京都中野区△△4-5-6",
+        maxEntries: 5
+      },
+      {
+        id: 5,
+        date: "2025年6月15日",
+        store: "サンプルカフェ東京店",
+        address: "東京都千代田区△△4-5-6",
+        maxEntries: 2
+      }
+    ];
+
+    async function displayReservations() {
+      const log = document.getElementById("logContent");
+      let reservedEntriesHtml = "";
+      let hasReservation = false;
+
+      // localStorageからユーザー名を取得
+      userName = localStorage.getItem("userName"); 
+
+      if (!userName) {
+        log.innerHTML = "<p>ユーザー名が登録されていません。メインページに戻って名前を登録してください。</p>";
+        return;
+      }
+
+      for (const res of allReservations) {
+        // Firebaseから各予約のエントリーリストを取得
+        const snapshot = await firebase.database().ref('reservations/' + res.id + '/entries').once('value');
+        const entries = snapshot.val();
+        
+        // entriesがオブジェクトの場合、その値（ユーザー名）の中に現在のuserNameが含まれているかを確認
+        const isUserReserved = entries ? Object.values(entries).includes(userName) : false;
+
+        if (isUserReserved) {
+          reservedEntriesHtml += `
+            <div class="reservation-entry">
+              <p><strong>日付:</strong> ${res.date}</p>
+              <p><strong>店舗名:</strong> ${res.store}</p>
+              <p><strong>住所:</strong> ${res.address}</p>
+              <hr>
+            </div>
+          `;
+          hasReservation = true;
+        }
+      }
+
+      if (!hasReservation) {
+        log.innerHTML = "<p>まだ予約はありません。</p>";
+      } else {
+        log.innerHTML = reservedEntriesHtml;
+      }
     }
+
+    // ページロード時に予約情報を表示
+    window.onload = displayReservations;
   </script>
 </body>
 </html>
