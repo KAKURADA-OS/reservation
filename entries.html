@@ -3,19 +3,32 @@
 <head>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyDk0-QN1sA-JXguPHKc09uCEv0WxSuW1e0",
+      apiKey: "AIzaSyCzD2S-S1yv5SyiFCs9OrNPZQzMb7VppWg",
       authDomain: "reservation-7ecf1.firebaseapp.com",
       databaseURL: "https://reservation-7ecf1-default-rtdb.firebaseio.com",
       projectId: "reservation-7ecf1",
-      storageBucket: "reservation-7ecf1.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
+      storageBucket: "reservation-7ecf1.firebasestorage.app",
+      messagingSenderId: "464925582995",
+      appId: "1:464925582995:web:1891936be6fabd876f0f66"
     };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const auth = firebase.auth(); // Firebase Authを初期化
+
+    // 匿名サインインを実行し、成功したらデータベースの監視を開始
+    auth.signInAnonymously()
+      .then(() => {
+        console.log("匿名ユーザーがサインインしました (entries.html)。");
+        db.ref('reservations').on('value', renderEntries); // サインイン後にデータベース監視を開始
+      })
+      .catch((error) => {
+        console.error("匿名サインインエラー (entries.html):", error);
+        document.getElementById("entryList").innerHTML = "<p style='text-align:center;'>データベースにアクセスできません。エラーが発生しました。</p>";
+      });
   </script>
 
   <meta charset="UTF-8">
@@ -58,8 +71,6 @@
   <div id="entryList"></div>
 
   <script>
-    const reservations = JSON.parse(localStorage.getItem("reservations") || "[]");
-
     const entryList = document.getElementById("entryList");
 
     function renderEntries(data) {
@@ -94,7 +105,7 @@
       }
     }
 
-    db.ref('reservations').on('value', renderEntries);
+    //db.ref('reservations').on('value', renderEntries);
 
   </script>
 </body>
