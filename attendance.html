@@ -473,7 +473,7 @@
       calculatedSalary += travelCost;
 
       // 小数点以下を切り捨てて整数にする (必要であればroundやceilも検討)
-      calculatedSalary = Math.floor(calculatedSalary);
+      calculatedSalary = Math.ceil(calculatedSalary);
 
       const attendanceRef = db.ref(`reservations/${reservationId}/entries/${entryId}`);
       try {
