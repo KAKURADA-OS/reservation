@@ -240,7 +240,7 @@
     function generateTravelCostOptions() {
         let options = '';
         for (let i = 500; i <= 1500; i += 100) { // 500円から5000円まで100円刻み
-            options += `<option value="${i}">${i}円</option>`;
+            options += `<option value="${i}">${i}</option>`;
         }
         return options;
     }
@@ -336,6 +336,7 @@
                 <select id="travelCostSelect-${res.id}-${firstEntry.entryId}" required>
                     ${generateTravelCostOptions()}
                 </select>
+                <span>円</span>
 
                 <button type="submit" class="register-button">登録</button>
               </form>
