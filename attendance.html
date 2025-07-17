@@ -10,7 +10,7 @@
     body {
       font-family: Arial, sans-serif;
       background-color: #f0f0f0;
-      padding: 20px;
+      padding: 20px; /* 全体的な左右の余白を維持 */
     }
 
     .menu-icon {
@@ -48,19 +48,21 @@
       background-color: #575757;
     }
 
+    /* h2 (勤怠登録) の位置調整 */
+    h2 {
+      text-align: center;
+      margin-top: 20px; /* entries.htmlのh2に合わせる */
+      margin-bottom: 20px; /* entries.htmlのh2に合わせる */
+      padding-top: 40px; /* サイドバーのアイコンと重ならないように調整 */
+    }
+
     .container {
       max-width: 800px;
-      margin: 80px auto 40px; /* 勤怠登録タイトルの位置を調整するため、margin-topを大きめに */
+      margin: 20px auto 40px; /* h2との間隔を調整し、中央寄せを維持 */
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 20px; /* カードとカードの隙間 */
-    }
-
-    h2 { /* 勤怠登録の文字位置を高く */
-      margin-top: 0; /* containerのmargin-topと合わせて位置を調整 */
-      margin-bottom: 30px; /* カードとの間のスペース */
-      text-align: center;
+      /* gapプロパティは#pastReservationsに移動 */
     }
 
     .card {
@@ -85,6 +87,7 @@
     /* 勤務時間入力欄の横並び調整 */
     .time-inputs {
         display: flex;
+        flex-wrap: wrap; /* 小さい画面で折り返す */
         gap: 10px; /* 入力欄の間隔 */
         margin-bottom: 10px;
         align-items: center; /* 中央揃え */
@@ -111,14 +114,23 @@
     }
 
     /* 交通費・休憩時間のセレクトボックスの幅調整 */
-    #travelCostSelect, #restTimeSelect {
-        width: 100%; /* 親要素の幅いっぱいに広げる */
+    /* これらは親のdivでflexにしているので、width: auto; が適切 */
+    .rest-travel-input-group select {
+        width: auto; /* コンテンツに合わせて幅を自動調整 */
     }
 
     /* 単位表示の調整 */
     .unit-span {
         margin-left: 5px; /* セレクトボックスとの間に少し隙間 */
         font-weight: normal; /* 太字を解除 */
+    }
+
+    /* 休憩時間・交通費の行のflex設定 */
+    .rest-travel-input-group {
+        display: flex;
+        align-items: center;
+        gap: 5px; /* セレクトボックスと単位の間の隙間 */
+        margin-bottom: 10px; /* 次の要素との間隔 */
     }
 
 
@@ -142,6 +154,15 @@
         font-size: 1.1em;
         color: #666;
     }
+
+    /* カード間の隙間を制御する新しいスタイル */
+    #pastReservations {
+        display: flex;
+        flex-direction: column;
+        gap: 20px; /* ここでカード間の隙間を定義 */
+        width: 100%; /* containerの幅に合わせる */
+        align-items: center; /* カードを中央に寄せる */
+    }
   </style>
 </head>
 <body>
@@ -155,8 +176,7 @@
     <a href="attendance.html">勤怠登録</a>
   </div>
 
-  <div class="container" id="attendanceContainer">
-    <h2>勤怠登録</h2>
+  <h2>勤怠登録</h2> <div class="container" id="attendanceContainer">
     <div id="pastReservations">
       <p style="text-align:center;">過去の予約情報を読み込み中です...</p>
     </div>
@@ -230,7 +250,7 @@
     function generateTimeOptions(type) {
         let options = '';
         if (type === 'hour') {
-            for (let i = 8; i < 21; i++) {
+            for (let i = 8; i < 21; i++) { // 勤務時間に合わせて範囲を調整
                 const hour = String(i).padStart(2, '0');
                 options += `<option value="${hour}">${hour}</option>`;
             }
@@ -246,7 +266,7 @@
     // 交通費のオプションを生成するヘルパー関数
     function generateTravelCostOptions() {
         let options = '';
-        for (let i = 500; i <= 1500; i += 100) { // 500円から5000円まで100円刻み (上限は適宜調整)
+        for (let i = 500; i <= 1500; i += 100) { // 500円から1500円まで100円刻み (適切な上限に調整)
             options += `<option value="${i}">${i}</option>`;
         }
         return options;
@@ -351,16 +371,16 @@
                 </div>
 
                 <label for="restTimeSelect-${res.id}-${firstEntry.entryId}">休憩時間:</label>
-                <div style="display:flex; align-items: center; gap: 5px;">
-                    <select id="restTimeSelect-${res.id}-${firstEntry.entryId}" required style="width: auto;">
+                <div class="rest-travel-input-group">
+                    <select id="restTimeSelect-${res.id}-${firstEntry.entryId}" required>
                         ${generateRestMinuteOptions()}
                     </select>
                     <span class="unit-span">分</span>
                 </div>
 
                 <label for="travelCostSelect-${res.id}-${firstEntry.entryId}">交通費:</label>
-                <div style="display:flex; align-items: center; gap: 5px;">
-                    <select id="travelCostSelect-${res.id}-${firstEntry.entryId}" required style="width: auto;">
+                <div class="rest-travel-input-group">
+                    <select id="travelCostSelect-${res.id}-${firstEntry.entryId}" required>
                         ${generateTravelCostOptions()}
                     </select>
                     <span class="unit-span">円</span>
