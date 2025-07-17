@@ -86,6 +86,19 @@
       box-sizing: border-box;
     }
 
+    /* 勤務時間入力欄の横並び調整 */
+    .time-inputs {
+        display: flex;
+        gap: 10px; /* 入力欄の間隔 */
+        margin-bottom: 10px;
+    }
+
+    .time-inputs input {
+        flex-grow: 1; /* 各入力欄が利用可能なスペースを均等に占める */
+        width: auto; /* flex-growとの併用で調整 */
+    }
+
+
     .register-button {
       background-color: #28a745;
       color: white;
@@ -116,7 +129,7 @@
     <a href="index.html">予約</a>
     <a href="list.html">予約一覧</a>
     <a href="entries.html">予約者一覧</a>
-  </div>
+    <a href="attendance.html">勤怠登録</a> </div>
 
   <div class="container" id="attendanceContainer">
     <h2>勤怠登録</h2>
@@ -230,21 +243,27 @@
 
             const card = document.createElement("div");
             card.className = "card";
+            // 予約IDとエントリーIDがユニークであることを前提に、ユーザーが複数の時間帯で予約している場合、
+            // 最初の予約時間帯を表示します。もしそれぞれの時間帯で勤怠登録が必要なら、
+            // ユーザーのエントリー数だけカードを生成する必要がありますが、今回はシンプルに1枚のカードとします。
+            const firstEntry = userEntriesForThisReservation[0];
+
             card.innerHTML = `
               <p><strong>日付:</strong> ${res.date}</p>
               <p><strong>店舗名:</strong> ${res.store}</p>
               <p><strong>住所:</strong> ${res.address}</p>
-              <p><strong>予約時間帯:</strong> ${userEntriesForThisReservation[0].timeSlot}</p>
+              <p><strong>予約時間帯:</strong> ${firstEntry.timeSlot}</p>
               <hr>
-              <form onsubmit="submitAttendance(event, '${res.id}', '${userEntriesForThisReservation[0].entryId}')">
-                <label for="startTime-${res.id}-${userEntriesForThisReservation[0].entryId}">勤務開始時間:</label>
-                <input type="time" id="startTime-${res.id}-${userEntriesForThisReservation[0].entryId}" value="${userEntriesForThisReservation[0].startTime || '09:00'}" required>
+              <form onsubmit="submitAttendance(event, '${res.id}', '${firstEntry.entryId}')">
+                <label for="workTime-${res.id}-${firstEntry.entryId}">勤務時間: 9:00~18:00</label>
+                <div class="time-inputs">
+                    <input type="time" id="startTime-${res.id}-${firstEntry.entryId}" value="${firstEntry.startTime || '09:00'}" step="900" required>
+                    <span>~</span>
+                    <input type="time" id="endTime-${res.id}-${firstEntry.entryId}" value="${firstEntry.endTime || '18:00'}" step="900" required>
+                </div>
 
-                <label for="endTime-${res.id}-${userEntriesForThisReservation[0].entryId}">勤務終了時間:</label>
-                <input type="time" id="endTime-${res.id}-${userEntriesForThisReservation[0].entryId}" value="${userEntriesForThisReservation[0].endTime || '18:00'}" required>
-
-                <label for="travelCost-${res.id}-${userEntriesForThisReservation[0].entryId}">交通費:</label>
-                <input type="number" id="travelCost-${res.id}-${userEntriesForThisReservation[0].entryId}" value="${userEntriesForThisReservation[0].travelCost || 500}" min="0">
+                <label for="travelCost-${res.id}-${firstEntry.entryId}">交通費:</label>
+                <input type="number" id="travelCost-${res.id}-${firstEntry.entryId}" value="${firstEntry.travelCost || 500}" min="0">
 
                 <button type="submit" class="register-button">登録</button>
               </form>
