@@ -258,6 +258,7 @@
                     <input type="time" id="startTime-${res.id}-${firstEntry.entryId}" value="${firstEntry.startTime || '09:00'}" step="900" required>
                     <span>~</span>
                     <input type="time" id="endTime-${res.id}-${firstEntry.entryId}" value="${firstEntry.endTime || '18:00'}" step="900" required>
+                </div>
 
                 <label for="travelCost-${res.id}-${firstEntry.entryId}">交通費:</label>
                 <input type="number" id="travelCost-${res.id}-${firstEntry.entryId}" value="${firstEntry.travelCost || 500}" min="0" step="100">
