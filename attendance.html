@@ -239,7 +239,7 @@
     // 交通費のオプションを生成するヘルパー関数
     function generateTravelCostOptions() {
         let options = '';
-        for (let i = 500; i <= 5000; i += 100) { // 500円から5000円まで100円刻み
+        for (let i = 500; i <= 1500; i += 100) { // 500円から5000円まで100円刻み
             options += `<option value="${i}">${i}円</option>`;
         }
         return options;
