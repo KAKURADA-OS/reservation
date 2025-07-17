@@ -32,7 +32,7 @@
           document.getElementById("reservationContainer").style.display = "flex";
           // データベース操作を含む関数は認証後に呼び出す
           renderReservations();
-          updateReservationLog();
+          // updateReservationLog(); // 予約ログの表示を削除するためコメントアウト
         }
       })
       .catch((error) => {
@@ -128,6 +128,8 @@
     /* closed-button の hover 効果を調整 */
     .closed-button:hover { opacity: 1; }
 
+    /* 予約ログ関連のスタイルを削除またはコメントアウト */
+    /*
     .reservation-log {
       max-width: 500px;
       margin: 0 auto 40px;
@@ -141,6 +143,7 @@
     .reservation-log h3 {
       margin-top: 0;
     }
+    */
 
     .card label[for="userName"] { /* "名前を入力してください"のラベル */
       display: block; /* ラベルをブロック要素にして、入力ボックスを新しい行に */
@@ -237,13 +240,6 @@
   </div>
 
   <div class="container" id="reservationContainer" style="display: none;"></div>
-
-  <div id="reservationLog" class="reservation-log">
-    <h3>予約一覧</h3>
-    <div id="logContent">
-      <p>まだ予約はありません。</p>
-    </div>
-  </div>
 
   <div id="timeSelectionModal" class="modal">
     <div class="modal-content">
@@ -381,7 +377,7 @@
 
           alert(`${userName} さんの予約をキャンセルしました。`);
           renderReservations(); // 再描画して最新の状態を反映
-          updateReservationLog(); // 予約一覧も更新
+          // updateReservationLog(); // 予約一覧の更新を削除
         };
 
         card.innerHTML = `
@@ -435,10 +431,11 @@
       alert(`${userName} さんが ${selectedReservation.store} に ${timeSlot} でエントリーしました。`);
       closeTimeSelectionModal();
       renderReservations(); 
-      updateReservationLog(); 
+      // updateReservationLog(); // 予約ログの更新を削除
     }
 
-    // 変更点：updateReservationLog 関数を async に変更し、Firebaseからデータを取得するようにする
+    // updateReservationLog 関数自体を削除
+    /*
     async function updateReservationLog() {
       const log = document.getElementById("logContent");
       let reservedEntriesHtml = "";
@@ -472,12 +469,16 @@
       }
       document.getElementById("reservationLog").style.display = "block"; // 予約ログを表示
     }
+    */
 
+    // showReservationLog 関数自体を削除
+    /*
     function showReservationLog() {
       closeSidebar();
       document.getElementById("reservationLog").style.display = "block";
       window.scrollTo(0, document.body.scrollHeight);
     }
+    */
   </script>
 
 </body>
