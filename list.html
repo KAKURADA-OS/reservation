@@ -69,6 +69,12 @@
       border: none;
       border-top: 1px solid #ccc;
     }
+    .user-entry-details {
+      margin-left: 20px;
+      margin-top: 5px;
+      font-size: 0.95em;
+      color: #555;
+    }
   </style>
 </head>
 <body>
@@ -97,7 +103,7 @@
       databaseURL: "https://reservation-7ecf1-default-rtdb.firebaseio.com",
       projectId: "reservation-7ecf1",
       storageBucket: "reservation-7ecf1.firebasestorage.app",
-      messagingSenderId: "464925582995", // YOUR_SENDER_ID は適切な値に置き換えてください
+      messagingSenderId: "464925582995",
       appId: "1:464925582995:web:1891936be6fabd876f0f66"
     };
 
@@ -172,20 +178,35 @@
         const snapshot = await firebase.database().ref('reservations/' + res.id + '/entries').once('value');
         const entries = snapshot.val();
         
-        // entriesがオブジェクトの場合、その値（ユーザー名）の中に現在のuserNameが含まれているかを確認
-        const isUserReserved = entries ? Object.values(entries).includes(userName) : false;
+        let userEntriesForThisReservation = [];
+        if (entries) {
+            for (const key in entries) {
+                if (entries[key].userName === userName) {
+                    userEntriesForThisReservation.push(entries[key]);
+                }
+            }
+        }
 
-        if (isUserReserved) {
+        if (userEntriesForThisReservation.length > 0) {
+          hasReservation = true;
           reservedEntriesHtml += `
             <div class="reservation-entry">
               <p><strong>日付:</strong> ${res.date}</p>
               <p><strong>店舗名:</strong> ${res.store}</p>
               <p><strong>住所:</strong> ${res.address}</p>
-              <p><strong>時間帯:</strong> ${entries[key].timeSlot}</p>
+          `;
+
+          // ユーザーのエントリーを時間帯ごとに表示
+          userEntriesForThisReservation.forEach(entry => {
+              reservedEntriesHtml += `
+                <p class="user-entry-details"> - 時間帯: ${entry.timeSlot}</p>
+              `;
+          });
+
+          reservedEntriesHtml += `
               <hr>
             </div>
           `;
-          hasReservation = true;
         }
       }
 
@@ -206,9 +227,6 @@
         console.error("匿名サインインエラー (list.html):", error);
         document.getElementById("logContent").innerHTML = "<p>データベースにアクセスできません。エラーが発生しました。</p>";
       });
-
-    // ページロード時に予約情報を表示
-    //window.onload = displayReservations;
   </script>
 </body>
 </html>
