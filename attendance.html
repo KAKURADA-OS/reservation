@@ -161,6 +161,14 @@
         width: 100%; /* containerの幅に合わせる */
         align-items: center; /* カードを中央に寄せる */
     }
+
+    .salary-display {
+        margin-top: 15px;
+        font-size: 1.1em;
+        font-weight: bold;
+        color: #0056b3;
+        text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -342,7 +350,7 @@
               <p><strong>住所:</strong> ${res.address}</p>
               <p><strong>予約時間帯:</strong> ${firstEntry.timeSlot}</p>
               <hr>
-              <form onsubmit="submitAttendance(event, '${res.id}', '${firstEntry.entryId}')">
+              <form id="attendanceForm-${res.id}-${firstEntry.entryId}" onsubmit="submitAttendance(event, '${res.id}', '${firstEntry.entryId}')">
                 <label>勤務時間:</label>
                 <div class="time-inputs">
                     <div class="time-select-group">
@@ -384,7 +392,8 @@
                     <span class="unit-span">円</span>
                 </div>
 
-                <button type="submit" class="register-button">登録</button>
+                <button type="submit" id="registerButton-${res.id}-${firstEntry.entryId}" class="register-button">登録</button>
+                <div id="salaryDisplay-${res.id}-${firstEntry.entryId}" class="salary-display" style="display:none;"></div>
               </form>
             `;
             pastReservationsDiv.appendChild(card);
@@ -414,28 +423,79 @@
       const endMinuteInput = document.getElementById(`endMinute-${reservationId}-${entryId}`);
       const restTimeSelect = document.getElementById(`restTimeSelect-${reservationId}-${entryId}`); // 休憩時間
       const travelCostSelect = document.getElementById(`travelCostSelect-${reservationId}-${entryId}`);
+      const registerButton = document.getElementById(`registerButton-${reservationId}-${entryId}`);
+      const salaryDisplay = document.getElementById(`salaryDisplay-${reservationId}-${entryId}`);
 
-      const startTime = `${startHourInput.value}:${startMinuteInput.value}`;
-      const endTime = `${endHourInput.value}:${endMinuteInput.value}`;
-      const restTime = parseInt(restTimeSelect.value, 10); // 休憩時間を取得
+      const startTimeStr = `${startHourInput.value}:${startMinuteInput.value}`;
+      const endTimeStr = `${endHourInput.value}:${endMinuteInput.value}`;
+      const restTimeMinutes = parseInt(restTimeSelect.value, 10); // 休憩時間を取得 (分)
       const travelCost = parseInt(travelCostSelect.value, 10);
 
-      if (!startTime || !endTime) {
+      if (!startTimeStr || !endTimeStr) {
           alert("勤務開始時間と終了時間を入力してください。");
           return;
       }
-      // 交通費、休憩時間はセレクトボックスで制御されるため、特に数値のバリデーションは不要
+
+      // 勤務時間計算
+      const start = new Date(`2000/01/01 ${startTimeStr}`); // 日付部分はダミー
+      const end = new Date(`2000/01/01 ${endTimeStr}`);
+
+      // 終了時間が開始時間より前の場合は、翌日とみなす
+      if (end < start) {
+          end.setDate(end.getDate() + 1);
+      }
+
+      let totalWorkMinutes = (end - start) / (1000 * 60); // ミリ秒を分に変換
+      let actualWorkMinutes = totalWorkMinutes - restTimeMinutes;
+
+      if (actualWorkMinutes < 0) {
+          actualWorkMinutes = 0; // 実働時間がマイナスになる場合は0とする
+      }
+
+      const hourlyRate = 1400; // 時給1400円
+      const overtimeMultiplier = 1.25; // 8時間超過時の倍率
+
+      let calculatedSalary = 0;
+      const eightHoursInMinutes = 8 * 60;
+
+      if (actualWorkMinutes <= eightHoursInMinutes) {
+          // 8時間以内
+          calculatedSalary = (actualWorkMinutes / 60) * hourlyRate;
+      } else {
+          // 8時間超過
+          const regularWorkMinutes = eightHoursInMinutes;
+          const overtimeMinutes = actualWorkMinutes - eightHoursInMinutes;
+
+          const regularSalary = (regularWorkMinutes / 60) * hourlyRate;
+          const overtimeSalary = (overtimeMinutes / 60) * hourlyRate * overtimeMultiplier;
+
+          calculatedSalary = regularSalary + overtimeSalary;
+      }
+
+      // 交通費を加算
+      calculatedSalary += travelCost;
+
+      // 小数点以下を切り捨てて整数にする (必要であればroundやceilも検討)
+      calculatedSalary = Math.floor(calculatedSalary);
+
 
       const attendanceRef = db.ref(`reservations/${reservationId}/entries/${entryId}`);
       try {
         await attendanceRef.update({
-          startTime: startTime,
-          endTime: endTime,
-          restTime: restTime, // 休憩時間を保存
+          startTime: startTimeStr,
+          endTime: endTimeStr,
+          restTime: restTimeMinutes, // 休憩時間を保存
           travelCost: travelCost,
+          calculatedSalary: calculatedSalary, // 計算された給料を保存
           updatedAt: new Date().toISOString() // 更新日時を追加
         });
         alert("勤怠情報が登録されました！");
+
+        // 登録ボタンを非表示にし、給料を表示
+        registerButton.style.display = 'none';
+        salaryDisplay.style.display = 'block';
+        salaryDisplay.innerHTML = `支払われる給料: ${calculatedSalary.toLocaleString()} 円`; // 日本語の通貨形式で表示
+
       } catch (error) {
         console.error("勤怠情報の登録中にエラーが発生しました:", error);
         alert("勤怠情報の登録に失敗しました。");
