@@ -10,7 +10,6 @@
     body {
       font-family: Arial, sans-serif;
       background-color: #f0f0f0;
-      margin: 0;
       padding: 20px;
     }
 
@@ -83,7 +82,39 @@
       font-weight: bold;
     }
 
-    .card input[type="time"],
+    /* 新しい時間選択ボックスのスタイル */
+    .time-select-group {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .time-select-group select {
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-size: 1em;
+    }
+    
+    /* 勤務時間入力欄の横並び調整 */
+    .time-inputs {
+        display: flex;
+        gap: 10px; /* 入力欄の間隔 */
+        margin-bottom: 10px;
+        align-items: center; /* 中央揃え */
+    }
+
+    .time-inputs > div {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .time-inputs span {
+        font-weight: bold;
+    }
+
     .card input[type="number"] {
       width: calc(100% - 22px); /* paddingとborderを考慮 */
       padding: 10px;
@@ -91,18 +122,6 @@
       border: 1px solid #ccc;
       border-radius: 4px;
       box-sizing: border-box;
-    }
-
-    /* 勤務時間入力欄の横並び調整 */
-    .time-inputs {
-        display: flex;
-        gap: 10px; /* 入力欄の間隔 */
-        margin-bottom: 10px;
-    }
-
-    .time-inputs input {
-        flex-grow: 1; /* 各入力欄が利用可能なスペースを均等に占める */
-        width: auto; /* flex-growとの併用で調整 */
     }
 
 
@@ -136,6 +155,7 @@
     <a href="index.html">予約</a>
     <a href="list.html">予約一覧</a>
     <a href="entries.html">予約者一覧</a>
+    <a href="attendance.html">勤怠登録</a>
   </div>
 
   <div class="container" id="attendanceContainer">
@@ -209,6 +229,23 @@
       document.getElementById("sidebar").style.width = "0";
     }
 
+    // 時刻のオプションを生成するヘルパー関数
+    function generateTimeOptions(type) {
+        let options = '';
+        if (type === 'hour') {
+            for (let i = 0; i < 24; i++) {
+                const hour = String(i).padStart(2, '0');
+                options += `<option value="${hour}">${hour}</option>`;
+            }
+        } else if (type === 'minute') {
+            for (let i = 0; i < 60; i += 15) {
+                const minute = String(i).padStart(2, '0');
+                options += `<option value="${minute}">${minute}</option>`;
+            }
+        }
+        return options;
+    }
+
     async function loadPastReservations() {
       const pastReservationsDiv = document.getElementById("pastReservations");
       pastReservationsDiv.innerHTML = "";
@@ -252,6 +289,14 @@
             card.className = "card";
             const firstEntry = userEntriesForThisReservation[0];
 
+            // 勤務時間の初期値を取得 (またはデフォルト値)
+            const defaultStartTime = firstEntry.startTime || '09:00';
+            const defaultEndTime = firstEntry.endTime || '18:00';
+            const defaultStartHour = defaultStartTime.split(':')[0];
+            const defaultStartMinute = defaultStartTime.split(':')[1];
+            const defaultEndHour = defaultEndTime.split(':')[0];
+            const defaultEndMinute = defaultEndTime.split(':')[1];
+
             card.innerHTML = `
               <p><strong>日付:</strong> ${res.date}</p>
               <p><strong>店舗名:</strong> ${res.store}</p>
@@ -259,11 +304,29 @@
               <p><strong>予約時間帯:</strong> ${firstEntry.timeSlot}</p>
               <hr>
               <form onsubmit="submitAttendance(event, '${res.id}', '${firstEntry.entryId}')">
-                <label for="workTime-${res.id}-${firstEntry.entryId}">勤務時間: 9:00~18:00</label>
+                <label>勤務時間:</label>
                 <div class="time-inputs">
-                    <input type="time" id="startTime-${res.id}-${firstEntry.entryId}" value="${firstEntry.startTime || '09:00'}" step="900" required>
+                    <div class="time-select-group">
+                        <select id="startHour-${res.id}-${firstEntry.entryId}" required>
+                            ${generateTimeOptions('hour')}
+                        </select>
+                        <span>時</span>
+                        <select id="startMinute-${res.id}-${firstEntry.entryId}" required>
+                            ${generateTimeOptions('minute')}
+                        </select>
+                        <span>分</span>
+                    </div>
                     <span>~</span>
-                    <input type="time" id="endTime-${res.id}-${firstEntry.entryId}" value="${firstEntry.endTime || '18:00'}" step="900" required>
+                    <div class="time-select-group">
+                        <select id="endHour-${res.id}-${firstEntry.entryId}" required>
+                            ${generateTimeOptions('hour')}
+                        </select>
+                        <span>時</span>
+                        <select id="endMinute-${res.id}-${firstEntry.entryId}" required>
+                            ${generateTimeOptions('minute')}
+                        </select>
+                        <span>分</span>
+                    </div>
                 </div>
 
                 <label for="travelCost-${res.id}-${firstEntry.entryId}">交通費:</label>
@@ -273,6 +336,12 @@
               </form>
             `;
             pastReservationsDiv.appendChild(card);
+
+            // 初期値を設定
+            document.getElementById(`startHour-${res.id}-${firstEntry.entryId}`).value = defaultStartHour;
+            document.getElementById(`startMinute-${res.id}-${firstEntry.entryId}`).value = defaultStartMinute;
+            document.getElementById(`endHour-${res.id}-${firstEntry.entryId}`).value = defaultEndHour;
+            document.getElementById(`endMinute-${res.id}-${firstEntry.entryId}`).value = defaultEndMinute;
           }
         }
       }
@@ -285,15 +354,17 @@
     async function submitAttendance(event, reservationId, entryId) {
       event.preventDefault(); // フォームのデフォルト送信を防ぐ
 
-      const startTimeInput = document.getElementById(`startTime-${reservationId}-${entryId}`);
-      const endTimeInput = document.getElementById(`endTime-${reservationId}-${entryId}`);
+      const startHourInput = document.getElementById(`startHour-${reservationId}-${entryId}`);
+      const startMinuteInput = document.getElementById(`startMinute-${reservationId}-${entryId}`);
+      const endHourInput = document.getElementById(`endHour-${reservationId}-${entryId}`);
+      const endMinuteInput = document.getElementById(`endMinute-${reservationId}-${entryId}`);
       const travelCostInput = document.getElementById(`travelCost-${reservationId}-${entryId}`);
 
-      const startTime = startTimeInput.value;
-      const endTime = endTimeInput.value;
+      const startTime = `${startHourInput.value}:${startMinuteInput.value}`;
+      const endTime = `${endHourInput.value}:${endMinuteInput.value}`;
       const travelCost = parseInt(travelCostInput.value, 10);
 
-      if (!startTime || !endTime) {
+      if (!startTime || !endTime) { // selectボックスなので通常は空にならないが念のため
           alert("勤務開始時間と終了時間を入力してください。");
           return;
       }
@@ -301,7 +372,6 @@
           alert("交通費は0以上の値を入力してください。");
           return;
       }
-      // 交通費が100の倍数でない場合のチェック
       if (travelCost % 100 !== 0) {
           alert("交通費は100円単位で入力してください。");
           return;
