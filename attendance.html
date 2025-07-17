@@ -107,11 +107,11 @@
       border-radius: 4px;
       box-sizing: border-box;
       font-size: 1em;
-      margin-bottom: 10px; /* input[type="number"]と同じ間隔を確保 */
+      margin-bottom: 10px; /* 他のinputやselectとの間隔を確保 */
     }
 
-    /* 交通費のセレクトボックスの幅調整 */
-    #travelCostSelect {
+    /* 交通費・休憩時間のセレクトボックスの幅調整 */
+    #travelCostSelect, #restTimeSelect {
         width: 100%; /* 親要素の幅いっぱいに広げる */
     }
 
@@ -223,7 +223,7 @@
     function generateTimeOptions(type) {
         let options = '';
         if (type === 'hour') {
-            for (let i = 8; i < 21; i++) {
+            for (let i = 0; i < 24; i++) {
                 const hour = String(i).padStart(2, '0');
                 options += `<option value="${hour}">${hour}</option>`;
             }
@@ -239,7 +239,16 @@
     // 交通費のオプションを生成するヘルパー関数
     function generateTravelCostOptions() {
         let options = '';
-        for (let i = 500; i <= 1500; i += 100) { // 500円から5000円まで100円刻み
+        for (let i = 500; i <= 5000; i += 100) { // 500円から5000円まで100円刻み (上限は適宜調整)
+            options += `<option value="${i}">${i}</option>`;
+        }
+        return options;
+    }
+
+    // 休憩時間のオプションを生成するヘルパー関数
+    function generateRestMinuteOptions() {
+        let options = '';
+        for (let i = 0; i <= 60; i += 15) { // 0分から60分まで15分刻み
             options += `<option value="${i}">${i}</option>`;
         }
         return options;
@@ -298,6 +307,8 @@
             
             // 交通費の初期値を取得 (またはデフォルト値)
             const defaultTravelCost = firstEntry.travelCost || 500;
+            // 休憩時間の初期値を取得 (またはデフォルト値)
+            const defaultRestTime = firstEntry.restTime || 60; // デフォルトは60分に設定
 
 
             card.innerHTML = `
@@ -332,6 +343,12 @@
                     </div>
                 </div>
 
+                <label for="restTimeSelect-${res.id}-${firstEntry.entryId}">休憩時間:</label>
+                <select id="restTimeSelect-${res.id}-${firstEntry.entryId}" required>
+                    ${generateRestMinuteOptions()}
+                </select>
+                <span>分</span>
+
                 <label for="travelCostSelect-${res.id}-${firstEntry.entryId}">交通費:</label>
                 <select id="travelCostSelect-${res.id}-${firstEntry.entryId}" required>
                     ${generateTravelCostOptions()}
@@ -348,8 +365,8 @@
             document.getElementById(`startMinute-${res.id}-${firstEntry.entryId}`).value = defaultStartMinute;
             document.getElementById(`endHour-${res.id}-${firstEntry.entryId}`).value = defaultEndHour;
             document.getElementById(`endMinute-${res.id}-${firstEntry.entryId}`).value = defaultEndMinute;
+            document.getElementById(`restTimeSelect-${res.id}-${firstEntry.entryId}`).value = defaultRestTime; // 休憩時間の初期値
             document.getElementById(`travelCostSelect-${res.id}-${firstEntry.entryId}`).value = defaultTravelCost;
-
           }
         }
       }
@@ -366,24 +383,26 @@
       const startMinuteInput = document.getElementById(`startMinute-${reservationId}-${entryId}`);
       const endHourInput = document.getElementById(`endHour-${reservationId}-${entryId}`);
       const endMinuteInput = document.getElementById(`endMinute-${reservationId}-${entryId}`);
+      const restTimeSelect = document.getElementById(`restTimeSelect-${reservationId}-${entryId}`); // 休憩時間
       const travelCostSelect = document.getElementById(`travelCostSelect-${reservationId}-${entryId}`);
 
       const startTime = `${startHourInput.value}:${startMinuteInput.value}`;
       const endTime = `${endHourInput.value}:${endMinuteInput.value}`;
-      const travelCost = parseInt(travelCostSelect.value, 10); // selectボックスから値を取得
+      const restTime = parseInt(restTimeSelect.value, 10); // 休憩時間を取得
+      const travelCost = parseInt(travelCostSelect.value, 10);
 
-      if (!startTime || !endTime) { // selectボックスなので通常は空にならないが念のため
+      if (!startTime || !endTime) {
           alert("勤務開始時間と終了時間を入力してください。");
           return;
       }
-      // 交通費はセレクトボックスで制御されるため、0以上であることや100円単位であることのチェックは不要になる
-      // ただし、念のためparseIntがNaNにならないようにしておく
+      // 交通費、休憩時間はセレクトボックスで制御されるため、特に数値のバリデーションは不要
 
       const attendanceRef = db.ref(`reservations/${reservationId}/entries/${entryId}`);
       try {
         await attendanceRef.update({
           startTime: startTime,
           endTime: endTime,
+          restTime: restTime, // 休憩時間を保存
           travelCost: travelCost,
           updatedAt: new Date().toISOString() // 更新日時を追加
         });
