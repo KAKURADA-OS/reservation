@@ -116,7 +116,6 @@
     <a href="index.html">予約</a>
     <a href="list.html">予約一覧</a>
     <a href="entries.html">予約者一覧</a>
-    <a href="attendance.html">勤怠登録</a>
   </div>
 
   <div class="container" id="attendanceContainer">
@@ -245,7 +244,7 @@
                 <input type="time" id="endTime-${res.id}-${userEntriesForThisReservation[0].entryId}" value="${userEntriesForThisReservation[0].endTime || '18:00'}" required>
 
                 <label for="travelCost-${res.id}-${userEntriesForThisReservation[0].entryId}">交通費:</label>
-                <input type="number" id="travelCost-${res.id}-${userEntriesForThisReservation[0].entryId}" value="${userEntriesForThisReservation[0].travelCost || 0}" min="0">
+                <input type="number" id="travelCost-${res.id}-${userEntriesForThisReservation[0].entryId}" value="${userEntriesForThisReservation[0].travelCost || 500}" min="0">
 
                 <button type="submit" class="register-button">登録</button>
               </form>
