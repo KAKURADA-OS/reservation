@@ -43,6 +43,7 @@
 
     h2 {
       text-align: center;
+      margin-bottom: 30px;
     }
 
     .card {
@@ -63,6 +64,19 @@
     .user-name {
       font-weight: bold;
       color: #28a745;
+      margin-right: 10px; /* 名前の間のスペース */
+      display: inline-block; /* 横並びにするため */
+    }
+
+    .time-slot-section {
+      margin-top: 20px;
+      padding-top: 10px;
+      border-top: 1px solid #eee;
+    }
+
+    .time-slot-section h4 {
+      margin-top: 0;
+      color: #333;
     }
   </style>
 </head>
@@ -73,40 +87,129 @@
   <script>
     const entryList = document.getElementById("entryList");
 
+    // 予約店舗情報を取得
+    const reservationsData = [
+      {
+        id: 1,
+        date: "2025年6月15日",
+        store: "サンプルカフェ渋谷店",
+        address: "東京都渋谷区○○1-2-3",
+        maxEntries: 2
+      },
+      {
+        id: 2,
+        date: "2025年6月15日",
+        store: "サンプルカフェ新宿店",
+        address: "東京都新宿区△△4-5-6",
+        maxEntries: 3
+      },
+      {
+        id: 3,
+        date: "2025年6月15日",
+        store: "サンプルカフェ練馬店",
+        address: "東京都練馬区△△4-5-6",
+        maxEntries: 1
+      },
+      {
+        id: 4,
+        date: "2025年6月15日",
+        store: "サンプルカフェ中野店",
+        address: "東京都中野区△△4-5-6",
+        maxEntries: 5
+      },
+      {
+        id: 5,
+        date: "2025年6月15日",
+        store: "サンプルカフェ東京店",
+        address: "東京都千代田区△△4-5-6",
+        maxEntries: 2
+      }
+    ];
+
     function renderEntries(data) {
       entryList.innerHTML = "";
-      const reservations = data.val();
-      let hasEntry = false;
+      const firebaseReservations = data.val();
+      let hasAnyEntry = false;
 
-      for (let id in reservations) {
-        const res = reservations[id];
-        const entries = res.entries || {};
+      for (let id in firebaseReservations) {
+        const firebaseRes = firebaseReservations[id];
+        const entries = firebaseRes.entries || {};
         
-        const names = Object.values(entries);
-        if (names.length > 0) {
-          hasEntry = true;
+        // 元のreservationsDataから店舗情報を取得
+        const reservationDetail = reservationsData.find(r => r.id === parseInt(id));
 
-          const card = document.createElement("div");
-          card.className = "card";
+        if (reservationDetail) {
+          const allDayEntries = [];
+          const morningEntries = [];
+          const afternoonEntries = [];
 
-          card.innerHTML = `
-            <p><strong>日付:</strong> ${res.date}</p>
-            <p><strong>店舗名:</strong> ${res.store}</p>
-            <p><strong>住所:</strong> ${res.address}</p>
-            <p><strong>予約者:</strong> ${names.map(name => `<span class="user-name">${name}</span>`).join(", ")}</p>
-          `;
+          // エントリーを時間帯で分類
+          for (const entryId in entries) {
+            const entry = entries[entryId];
+            if (entry.timeSlot === '全日') {
+              allDayEntries.push(entry.userName);
+            } else if (entry.timeSlot === '午前') {
+              morningEntries.push(entry.userName);
+            } else if (entry.timeSlot === '午後') {
+              afternoonEntries.push(entry.userName);
+            }
+          }
 
-          entryList.appendChild(card);
+          // エントリーがあれば表示
+          if (allDayEntries.length > 0 || morningEntries.length > 0 || afternoonEntries.length > 0) {
+            hasAnyEntry = true;
+
+            const card = document.createElement("div");
+            card.className = "card";
+
+            card.innerHTML = `
+              <p><strong>日付:</strong> ${reservationDetail.date}</p>
+              <p><strong>店舗名:</strong> ${reservationDetail.store}</p>
+              <p><strong>住所:</strong> ${reservationDetail.address}</p>
+            `;
+
+            // 全日セクション
+            if (allDayEntries.length > 0) {
+              const allDaySection = document.createElement("div");
+              allDaySection.className = "time-slot-section";
+              allDaySection.innerHTML = `
+                <h4>全日</h4>
+                <p>${allDayEntries.map(name => `<span class="user-name">${name}</span>`).join("")}</p>
+              `;
+              card.appendChild(allDaySection);
+            }
+
+            // 午前セクション
+            if (morningEntries.length > 0) {
+              const morningSection = document.createElement("div");
+              morningSection.className = "time-slot-section";
+              morningSection.innerHTML = `
+                <h4>午前</h4>
+                <p>${morningEntries.map(name => `<span class="user-name">${name}</span>`).join("")}</p>
+              `;
+              card.appendChild(morningSection);
+            }
+
+            // 午後セクション
+            if (afternoonEntries.length > 0) {
+              const afternoonSection = document.createElement("div");
+              afternoonSection.className = "time-slot-section";
+              afternoonSection.innerHTML = `
+                <h4>午後</h4>
+                <p>${afternoonEntries.map(name => `<span class="user-name">${name}</span>`).join("")}</p>
+              `;
+              card.appendChild(afternoonSection);
+            }
+            
+            entryList.appendChild(card);
+          }
         }
       }
 
-      if (!hasEntry) {
+      if (!hasAnyEntry) {
         entryList.innerHTML = "<p style='text-align:center;'>予約情報がありません。</p>";
       }
     }
-
-    //db.ref('reservations').on('value', renderEntries);
-
   </script>
 </body>
 </html>
