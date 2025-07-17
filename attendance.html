@@ -50,11 +50,17 @@
 
     .container {
       max-width: 800px;
-      margin: 80px auto 40px;
+      margin: 80px auto 40px; /* 勤怠登録タイトルの位置を調整するため、margin-topを大きめに */
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 20px;
+      gap: 20px; /* カードとカードの隙間 */
+    }
+
+    h2 { /* 勤怠登録の文字位置を高く */
+      margin-top: 0; /* containerのmargin-topと合わせて位置を調整 */
+      margin-bottom: 30px; /* カードとの間のスペース */
+      text-align: center;
     }
 
     .card {
@@ -62,7 +68,7 @@
       padding: 20px;
       border-radius: 10px;
       width: 90%;
-      max-width: 400px;
+      max-width: 600px; /* カードの横幅を広く */
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
