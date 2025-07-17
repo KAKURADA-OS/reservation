@@ -170,11 +170,11 @@
     <a href="javascript:void(0)" onclick="closeSidebar()">✕ 閉じる</a>
     <a href="index.html">予約</a>
     <a href="list.html">予約一覧</a>
-    <a href="work_history.html">勤務履歴</a>
-    <a href="entries.html">予約者一覧</a>
+    <a href="work_history.html">勤務履歴</a> <a href="entries.html">予約者一覧</a>
   </div>
 
-  <h2>勤怠登録</h2> <div class="container" id="attendanceContainer">
+  <h2>勤怠登録</h2>
+  <div class="container" id="attendanceContainer">
     <div id="pastReservations">
       <p style="text-align:center;">過去の予約情報を読み込み中です...</p>
     </div>
@@ -282,7 +282,7 @@
     async function loadPastReservations() {
       const pastReservationsDiv = document.getElementById("pastReservations");
       pastReservationsDiv.innerHTML = "";
-      let hasPastReservation = false;
+      let hasPastReservationToRegister = false; // 登録が必要な過去の予約があるか
 
       userName = localStorage.getItem("userName");
       if (!userName) {
@@ -316,92 +316,96 @@
           }
 
           if (userEntriesForThisReservation.length > 0) {
-            hasPastReservation = true;
-
-            const card = document.createElement("div");
-            card.className = "card";
             const firstEntry = userEntriesForThisReservation[0];
 
-            // 勤務時間の初期値を取得 (またはデフォルト値)
-            const defaultStartTime = firstEntry.startTime || '09:00';
-            const defaultEndTime = firstEntry.endTime || '18:00';
-            const defaultStartHour = defaultStartTime.split(':')[0];
-            const defaultStartMinute = defaultStartTime.split(':')[1];
-            const defaultEndHour = defaultEndTime.split(':')[0];
-            const defaultEndMinute = defaultEndTime.split(':')[1];
-            
-            // 交通費の初期値を取得 (またはデフォルト値)
-            const defaultTravelCost = firstEntry.travelCost || 500;
-            // 休憩時間の初期値を取得 (またはデフォルト値)
-            const defaultRestTime = firstEntry.restTime || 60; // デフォルトは60分に設定
+            // 勤怠情報が未登録の場合のみ表示（calculatedSalaryが存在しない場合）
+            if (firstEntry.calculatedSalary === undefined || firstEntry.calculatedSalary === null) {
+              hasPastReservationToRegister = true;
+
+              const card = document.createElement("div");
+              card.className = "card";
+
+              // 勤務時間の初期値を取得 (またはデフォルト値)
+              const defaultStartTime = firstEntry.startTime || '09:00';
+              const defaultEndTime = firstEntry.endTime || '18:00';
+              const defaultStartHour = defaultStartTime.split(':')[0];
+              const defaultStartMinute = defaultStartTime.split(':')[1];
+              const defaultEndHour = defaultEndTime.split(':')[0];
+              const defaultEndMinute = defaultEndTime.split(':')[1];
+              
+              // 交通費の初期値を取得 (またはデフォルト値)
+              const defaultTravelCost = firstEntry.travelCost || 500;
+              // 休憩時間の初期値を取得 (またはデフォルト値)
+              const defaultRestTime = firstEntry.restTime || 60; // デフォルトは60分に設定
 
 
-            card.innerHTML = `
-              <p><strong>日付:</strong> ${res.date}</p>
-              <p><strong>店舗名:</strong> ${res.store}</p>
-              <p><strong>住所:</strong> ${res.address}</p>
-              <p><strong>予約時間帯:</strong> ${firstEntry.timeSlot}</p>
-              <hr>
-              <form onsubmit="submitAttendance(event, '${res.id}', '${firstEntry.entryId}')">
-                <label>勤務時間:</label>
-                <div class="time-inputs">
-                    <div class="time-select-group">
-                        <select id="startHour-${res.id}-${firstEntry.entryId}" required>
-                            ${generateTimeOptions('hour')}
-                        </select>
-                        <span>時</span>
-                        <select id="startMinute-${res.id}-${firstEntry.entryId}" required>
-                            ${generateTimeOptions('minute')}
-                        </select>
-                        <span>分</span>
-                    </div>
-                    <span>~</span>
-                    <div class="time-select-group">
-                        <select id="endHour-${res.id}-${firstEntry.entryId}" required>
-                            ${generateTimeOptions('hour')}
-                        </select>
-                        <span>時</span>
-                        <select id="endMinute-${res.id}-${firstEntry.entryId}" required>
-                            ${generateTimeOptions('minute')}
-                        </select>
-                        <span>分</span>
-                    </div>
-                </div>
+              card.innerHTML = `
+                <p><strong>日付:</strong> ${res.date}</p>
+                <p><strong>店舗名:</strong> ${res.store}</p>
+                <p><strong>住所:</strong> ${res.address}</p>
+                <p><strong>予約時間帯:</strong> ${firstEntry.timeSlot}</p>
+                <hr>
+                <form onsubmit="submitAttendance(event, '${res.id}', '${firstEntry.entryId}')">
+                  <label>勤務時間:</label>
+                  <div class="time-inputs">
+                      <div class="time-select-group">
+                          <select id="startHour-${res.id}-${firstEntry.entryId}" required>
+                              ${generateTimeOptions('hour')}
+                          </select>
+                          <span>時</span>
+                          <select id="startMinute-${res.id}-${firstEntry.entryId}" required>
+                              ${generateTimeOptions('minute')}
+                          </select>
+                          <span>分</span>
+                      </div>
+                      <span>~</span>
+                      <div class="time-select-group">
+                          <select id="endHour-${res.id}-${firstEntry.entryId}" required>
+                              ${generateTimeOptions('hour')}
+                          </select>
+                          <span>時</span>
+                          <select id="endMinute-${res.id}-${firstEntry.entryId}" required>
+                              ${generateTimeOptions('minute')}
+                          </select>
+                          <span>分</span>
+                      </div>
+                  </div>
 
-                <label for="restTimeSelect-${res.id}-${firstEntry.entryId}">休憩時間:</label>
-                <div class="rest-travel-input-group">
-                    <select id="restTimeSelect-${res.id}-${firstEntry.entryId}" required>
-                        ${generateRestMinuteOptions()}
-                    </select>
-                    <span class="unit-span">分</span>
-                </div>
+                  <label for="restTimeSelect-${res.id}-${firstEntry.entryId}">休憩時間:</label>
+                  <div class="rest-travel-input-group">
+                      <select id="restTimeSelect-${res.id}-${firstEntry.entryId}" required>
+                          ${generateRestMinuteOptions()}
+                      </select>
+                      <span class="unit-span">分</span>
+                  </div>
 
-                <label for="travelCostSelect-${res.id}-${firstEntry.entryId}">交通費:</label>
-                <div class="rest-travel-input-group">
-                    <select id="travelCostSelect-${res.id}-${firstEntry.entryId}" required>
-                        ${generateTravelCostOptions()}
-                    </select>
-                    <span class="unit-span">円</span>
-                </div>
+                  <label for="travelCostSelect-${res.id}-${firstEntry.entryId}">交通費:</label>
+                  <div class="rest-travel-input-group">
+                      <select id="travelCostSelect-${res.id}-${firstEntry.entryId}" required>
+                          ${generateTravelCostOptions()}
+                      </select>
+                      <span class="unit-span">円</span>
+                  </div>
 
-                <button type="submit" class="register-button">登録</button>
-              </form>
-            `;
-            pastReservationsDiv.appendChild(card);
+                  <button type="submit" class="register-button">登録</button>
+                </form>
+              `;
+              pastReservationsDiv.appendChild(card);
 
-            // 初期値を設定
-            document.getElementById(`startHour-${res.id}-${firstEntry.entryId}`).value = defaultStartHour;
-            document.getElementById(`startMinute-${res.id}-${firstEntry.entryId}`).value = defaultStartMinute;
-            document.getElementById(`endHour-${res.id}-${firstEntry.entryId}`).value = defaultEndHour;
-            document.getElementById(`endMinute-${res.id}-${firstEntry.entryId}`).value = defaultEndMinute;
-            document.getElementById(`restTimeSelect-${res.id}-${firstEntry.entryId}`).value = defaultRestTime; // 休憩時間の初期値
-            document.getElementById(`travelCostSelect-${res.id}-${firstEntry.entryId}`).value = defaultTravelCost;
+              // 初期値を設定
+              document.getElementById(`startHour-${res.id}-${firstEntry.entryId}`).value = defaultStartHour;
+              document.getElementById(`startMinute-${res.id}-${firstEntry.entryId}`).value = defaultStartMinute;
+              document.getElementById(`endHour-${res.id}-${firstEntry.entryId}`).value = defaultEndHour;
+              document.getElementById(`endMinute-${res.id}-${firstEntry.entryId}`).value = defaultEndMinute;
+              document.getElementById(`restTimeSelect-${res.id}-${firstEntry.entryId}`).value = defaultRestTime; // 休憩時間の初期値
+              document.getElementById(`travelCostSelect-${res.id}-${firstEntry.entryId}`).value = defaultTravelCost;
+            }
           }
         }
       }
 
-      if (!hasPastReservation) {
-        pastReservationsDiv.innerHTML = "<p class='no-past-reservations'>当日以前の予約はありません。</p>";
+      if (!hasPastReservationToRegister) {
+        pastReservationsDiv.innerHTML = "<p class='no-past-reservations'>登録が必要な当日以前の予約はありません。</p>";
       }
     }
 
@@ -414,28 +418,86 @@
       const endMinuteInput = document.getElementById(`endMinute-${reservationId}-${entryId}`);
       const restTimeSelect = document.getElementById(`restTimeSelect-${reservationId}-${entryId}`); // 休憩時間
       const travelCostSelect = document.getElementById(`travelCostSelect-${reservationId}-${entryId}`);
+      const formElement = event.target; // フォーム要素を取得
+      const cardElement = formElement.closest('.card'); // 親のカード要素を取得
 
-      const startTime = `${startHourInput.value}:${startMinuteInput.value}`;
-      const endTime = `${endHourInput.value}:${endMinuteInput.value}`;
-      const restTime = parseInt(restTimeSelect.value, 10); // 休憩時間を取得
+      const startTimeStr = `${startHourInput.value}:${startMinuteInput.value}`;
+      const endTimeStr = `${endHourInput.value}:${endMinuteInput.value}`;
+      const restTimeMinutes = parseInt(restTimeSelect.value, 10); // 休憩時間を取得 (分)
       const travelCost = parseInt(travelCostSelect.value, 10);
 
-      if (!startTime || !endTime) {
+      if (!startTimeStr || !endTimeStr) {
           alert("勤務開始時間と終了時間を入力してください。");
           return;
       }
-      // 交通費、休憩時間はセレクトボックスで制御されるため、特に数値のバリデーションは不要
+
+      // 勤務時間計算
+      // Dateオブジェクトに日付部分を含めることで、日付を跨ぐ勤務時間に対応
+      const today = new Date();
+      const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), parseInt(startHourInput.value), parseInt(startMinuteInput.value), 0);
+      let endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), parseInt(endHourInput.value), parseInt(endMinuteInput.value), 0);
+
+      // 終了時間が開始時間より前の場合は、翌日とみなす
+      if (endDate < startDate) {
+          endDate.setDate(endDate.getDate() + 1);
+      }
+
+      let totalWorkMinutes = (endDate - startDate) / (1000 * 60); // ミリ秒を分に変換
+      let actualWorkMinutes = totalWorkMinutes - restTimeMinutes;
+
+      if (actualWorkMinutes < 0) {
+          actualWorkMinutes = 0; // 実働時間がマイナスになる場合は0とする
+      }
+
+      const hourlyRate = 1400; // 時給1400円
+      const overtimeMultiplier = 1.25; // 8時間超過時の倍率
+
+      let calculatedSalary = 0;
+      const eightHoursInMinutes = 8 * 60;
+
+      if (actualWorkMinutes <= eightHoursInMinutes) {
+          // 8時間以内
+          calculatedSalary = (actualWorkMinutes / 60) * hourlyRate;
+      } else {
+          // 8時間超過
+          const regularWorkMinutes = eightHoursInMinutes;
+          const overtimeMinutes = actualWorkMinutes - eightHoursInMinutes;
+
+          const regularSalary = (regularWorkMinutes / 60) * hourlyRate;
+          const overtimeSalary = (overtimeMinutes / 60) * hourlyRate * overtimeMultiplier;
+
+          calculatedSalary = regularSalary + overtimeSalary;
+      }
+
+      // 交通費を加算
+      calculatedSalary += travelCost;
+
+      // 小数点以下を切り捨てて整数にする (必要であればroundやceilも検討)
+      calculatedSalary = Math.floor(calculatedSalary);
 
       const attendanceRef = db.ref(`reservations/${reservationId}/entries/${entryId}`);
       try {
         await attendanceRef.update({
-          startTime: startTime,
-          endTime: endTime,
-          restTime: restTime, // 休憩時間を保存
+          startTime: startTimeStr,
+          endTime: endTimeStr,
+          restTime: restTimeMinutes, // 休憩時間を保存
           travelCost: travelCost,
+          calculatedSalary: calculatedSalary, // 計算された給料を保存
           updatedAt: new Date().toISOString() // 更新日時を追加
         });
         alert("勤怠情報が登録されました！");
+
+        // 登録が完了したらカードを削除
+        if (cardElement) {
+            cardElement.remove();
+        }
+
+        // 全てのカードが削除されたかチェックし、メッセージを表示
+        const remainingCards = document.querySelectorAll('#pastReservations .card');
+        if (remainingCards.length === 0) {
+            document.getElementById("pastReservations").innerHTML = "<p class='no-past-reservations'>登録が必要な当日以前の予約はありません。</p>";
+        }
+
       } catch (error) {
         console.error("勤怠情報の登録中にエラーが発生しました:", error);
         alert("勤怠情報の登録に失敗しました。");
