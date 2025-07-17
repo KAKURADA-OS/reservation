@@ -115,6 +115,13 @@
         width: 100%; /* 親要素の幅いっぱいに広げる */
     }
 
+    /* 単位表示の調整 */
+    .unit-span {
+        margin-left: 5px; /* セレクトボックスとの間に少し隙間 */
+        font-weight: normal; /* 太字を解除 */
+    }
+
+
     .register-button {
       background-color: #28a745;
       color: white;
@@ -223,7 +230,7 @@
     function generateTimeOptions(type) {
         let options = '';
         if (type === 'hour') {
-            for (let i = 0; i < 24; i++) {
+            for (let i = 8; i < 21; i++) {
                 const hour = String(i).padStart(2, '0');
                 options += `<option value="${hour}">${hour}</option>`;
             }
@@ -239,7 +246,7 @@
     // 交通費のオプションを生成するヘルパー関数
     function generateTravelCostOptions() {
         let options = '';
-        for (let i = 500; i <= 5000; i += 100) { // 500円から5000円まで100円刻み (上限は適宜調整)
+        for (let i = 500; i <= 1500; i += 100) { // 500円から5000円まで100円刻み (上限は適宜調整)
             options += `<option value="${i}">${i}</option>`;
         }
         return options;
@@ -344,16 +351,20 @@
                 </div>
 
                 <label for="restTimeSelect-${res.id}-${firstEntry.entryId}">休憩時間:</label>
-                <select id="restTimeSelect-${res.id}-${firstEntry.entryId}" required>
-                    ${generateRestMinuteOptions()}
-                </select>
-                <span>分</span>
+                <div style="display:flex; align-items: center; gap: 5px;">
+                    <select id="restTimeSelect-${res.id}-${firstEntry.entryId}" required style="width: auto;">
+                        ${generateRestMinuteOptions()}
+                    </select>
+                    <span class="unit-span">分</span>
+                </div>
 
                 <label for="travelCostSelect-${res.id}-${firstEntry.entryId}">交通費:</label>
-                <select id="travelCostSelect-${res.id}-${firstEntry.entryId}" required>
-                    ${generateTravelCostOptions()}
-                </select>
-                <span>円</span>
+                <div style="display:flex; align-items: center; gap: 5px;">
+                    <select id="travelCostSelect-${res.id}-${firstEntry.entryId}" required style="width: auto;">
+                        ${generateTravelCostOptions()}
+                    </select>
+                    <span class="unit-span">円</span>
+                </div>
 
                 <button type="submit" class="register-button">登録</button>
               </form>
