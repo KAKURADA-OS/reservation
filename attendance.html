@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>勤怠登録</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+      padding: 20px;
+    }
+
+    .menu-icon {
+      font-size: 30px;
+      cursor: pointer;
+      padding: 15px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+    }
+
+    .sidebar {
+      height: 100%;
+      width: 0;
+      position: fixed;
+      z-index: 999;
+      top: 0;
+      left: 0;
+      background-color: #333;
+      overflow-x: hidden;
+      transition: 0.3s;
+      padding-top: 60px;
+    }
+
+    .sidebar a {
+      padding: 10px 20px;
+      text-decoration: none;
+      font-size: 18px;
+      color: #fff;
+      display: block;
+    }
+
+    .sidebar a:hover {
+      background-color: #575757;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 80px auto 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .card {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .card p {
+      margin: 8px 0;
+    }
+
+    .card label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    .card input[type="time"],
+    .card input[type="number"] {
+      width: calc(100% - 22px); /* paddingとborderを考慮 */
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    .register-button {
+      background-color: #28a745;
+      color: white;
+      padding: 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    .register-button:hover {
+      opacity: 0.9;
+    }
+    .no-past-reservations {
+        text-align: center;
+        margin-top: 50px;
+        font-size: 1.1em;
+        color: #666;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="menu-icon" onclick="openSidebar()">☰</div>
+  <div id="sidebar" class="sidebar">
+    <a href="javascript:void(0)" onclick="closeSidebar()">✕ 閉じる</a>
+    <a href="index.html">予約</a>
+    <a href="list.html">予約一覧</a>
+    <a href="entries.html">予約者一覧</a>
+    <a href="attendance.html">勤怠登録</a>
+  </div>
+
+  <div class="container" id="attendanceContainer">
+    <h2>勤怠登録</h2>
+    <div id="pastReservations">
+      <p style="text-align:center;">過去の予約情報を読み込み中です...</p>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCzD2S-S1yv5SyiFCs9OrNPZQzMb7VppWg",
+      authDomain: "reservation-7ecf1.firebaseapp.com",
+      databaseURL: "https://reservation-7ecf1-default-rtdb.firebaseio.com",
+      projectId: "reservation-7ecf1",
+      storageBucket: "reservation-7ecf1.firebasestorage.app",
+      messagingSenderId: "464925582995",
+      appId: "1:464925582995:web:1891936be6fabd876f0f66"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const auth = firebase.auth();
+
+    let userName = "";
+
+    // 予約情報の定義 (index.html および list.html と同じものを使用)
+    const allReservations = [
+      {
+        id: 1,
+        date: "2025年6月15日",
+        store: "サンプルカフェ渋谷店",
+        address: "東京都渋谷区○○1-2-3",
+        maxEntries: 2
+      },
+      {
+        id: 2,
+        date: "2025年6月15日",
+        store: "サンプルカフェ新宿店",
+        address: "東京都新宿区△△4-5-6",
+        maxEntries: 3
+      },
+      {
+        id: 3,
+        date: "2025年6月15日",
+        store: "サンプルカフェ練馬店",
+        address: "東京都練馬区△△4-5-6",
+        maxEntries: 1
+      },
+      {
+        id: 4,
+        date: "2025年6月15日",
+        store: "サンプルカフェ中野店",
+        address: "東京都中野区△△4-5-6",
+        maxEntries: 5
+      },
+      {
+        id: 5,
+        date: "2025年6月15日",
+        store: "サンプルカフェ東京店",
+        address: "東京都千代田区△△4-5-6",
+        maxEntries: 2
+      }
+    ];
+
+    function openSidebar() {
+      document.getElementById("sidebar").style.width = "250px";
+    }
+
+    function closeSidebar() {
+      document.getElementById("sidebar").style.width = "0";
+    }
+
+    async function loadPastReservations() {
+      const pastReservationsDiv = document.getElementById("pastReservations");
+      pastReservationsDiv.innerHTML = "";
+      let hasPastReservation = false;
+
+      userName = localStorage.getItem("userName");
+      if (!userName) {
+        pastReservationsDiv.innerHTML = "<p class='no-past-reservations'>ユーザー名が登録されていません。メインページに戻って名前を登録してください。</p>";
+        return;
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // 今日の日付の0時0分0秒に設定
+
+      for (const res of allReservations) {
+        // 予約日をDateオブジェクトに変換
+        const reservationDateParts = res.date.match(/(\d+)年(\d+)月(\d+)日/);
+        const year = parseInt(reservationDateParts[1]);
+        const month = parseInt(reservationDateParts[2]) - 1; // 月は0から始まる
+        const day = parseInt(reservationDateParts[3]);
+        const resDate = new Date(year, month, day);
+
+        // 当日以前の予約のみを対象とする
+        if (resDate <= today) {
+          const snapshot = await firebase.database().ref('reservations/' + res.id + '/entries').once('value');
+          const entries = snapshot.val();
+
+          let userEntriesForThisReservation = [];
+          if (entries) {
+            for (const key in entries) {
+              if (entries[key].userName === userName) {
+                userEntriesForThisReservation.push({ entryId: key, ...entries[key] }); // entryIdも保持
+              }
+            }
+          }
+
+          if (userEntriesForThisReservation.length > 0) {
+            hasPastReservation = true;
+
+            const card = document.createElement("div");
+            card.className = "card";
+            card.innerHTML = `
+              <p><strong>日付:</strong> ${res.date}</p>
+              <p><strong>店舗名:</strong> ${res.store}</p>
+              <p><strong>住所:</strong> ${res.address}</p>
+              <p><strong>予約時間帯:</strong> ${userEntriesForThisReservation[0].timeSlot}</p>
+              <hr>
+              <form onsubmit="submitAttendance(event, '${res.id}', '${userEntriesForThisReservation[0].entryId}')">
+                <label for="startTime-${res.id}-${userEntriesForThisReservation[0].entryId}">勤務開始時間:</label>
+                <input type="time" id="startTime-${res.id}-${userEntriesForThisReservation[0].entryId}" value="${userEntriesForThisReservation[0].startTime || '09:00'}" required>
+
+                <label for="endTime-${res.id}-${userEntriesForThisReservation[0].entryId}">勤務終了時間:</label>
+                <input type="time" id="endTime-${res.id}-${userEntriesForThisReservation[0].entryId}" value="${userEntriesForThisReservation[0].endTime || '18:00'}" required>
+
+                <label for="travelCost-${res.id}-${userEntriesForThisReservation[0].entryId}">交通費:</label>
+                <input type="number" id="travelCost-${res.id}-${userEntriesForThisReservation[0].entryId}" value="${userEntriesForThisReservation[0].travelCost || 0}" min="0">
+
+                <button type="submit" class="register-button">登録</button>
+              </form>
+            `;
+            pastReservationsDiv.appendChild(card);
+          }
+        }
+      }
+
+      if (!hasPastReservation) {
+        pastReservationsDiv.innerHTML = "<p class='no-past-reservations'>当日以前の予約はありません。</p>";
+      }
+    }
+
+    async function submitAttendance(event, reservationId, entryId) {
+      event.preventDefault(); // フォームのデフォルト送信を防ぐ
+
+      const startTimeInput = document.getElementById(`startTime-${reservationId}-${entryId}`);
+      const endTimeInput = document.getElementById(`endTime-${reservationId}-${entryId}`);
+      const travelCostInput = document.getElementById(`travelCost-${reservationId}-${entryId}`);
+
+      const startTime = startTimeInput.value;
+      const endTime = endTimeInput.value;
+      const travelCost = parseInt(travelCostInput.value, 10);
+
+      if (!startTime || !endTime) {
+          alert("勤務開始時間と終了時間を入力してください。");
+          return;
+      }
+      if (travelCost < 0) {
+          alert("交通費は0以上の値を入力してください。");
+          return;
+      }
+
+      const attendanceRef = db.ref(`reservations/${reservationId}/entries/${entryId}`);
+      try {
+        await attendanceRef.update({
+          startTime: startTime,
+          endTime: endTime,
+          travelCost: travelCost,
+          updatedAt: new Date().toISOString() // 更新日時を追加
+        });
+        alert("勤怠情報が登録されました！");
+      } catch (error) {
+        console.error("勤怠情報の登録中にエラーが発生しました:", error);
+        alert("勤怠情報の登録に失敗しました。");
+      }
+    }
+
+    // ページロード時に匿名認証を行い、その後勤怠情報を表示
+    auth.signInAnonymously()
+      .then(() => {
+        console.log("匿名ユーザーがサインインしました (attendance.html)。");
+        loadPastReservations();
+      })
+      .catch((error) => {
+        console.error("匿名サインインエラー (attendance.html):", error);
+        document.getElementById("pastReservations").innerHTML = "<p class='no-past-reservations'>データベースにアクセスできません。エラーが発生しました。</p>";
+      });
+  </script>
+</body>
+</html>
