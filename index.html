@@ -160,6 +160,61 @@
       margin-right: 10px; /* 姓と名の間隔 */
     }
 
+    /* モーダル関連のスタイル */
+    .modal {
+      display: none; /* Hidden by default */
+      position: fixed; /* Stay in place */
+      z-index: 1; /* Sit on top */
+      left: 0;
+      top: 0;
+      width: 100%; /* Full width */
+      height: 100%; /* Full height */
+      overflow: auto; /* Enable scroll if needed */
+      background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background-color: #fefefe;
+      margin: auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 300px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .close-button {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .close-button:hover,
+    .close-button:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .time-slot-button {
+      background-color: #007BFF;
+      color: white;
+      padding: 10px 15px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      width: calc(100% - 10px); /* Adjust width for margin */
+    }
+
+    .time-slot-button:hover {
+      opacity: 0.9;
+    }
+
   </style>
 </head>
 <body>
@@ -190,8 +245,19 @@
     </div>
   </div>
 
+  <div id="timeSelectionModal" class="modal">
+    <div class="modal-content">
+      <span class="close-button" onclick="closeTimeSelectionModal()">&times;</span>
+      <h3>勤務時間を選択してください</h3>
+      <button class="time-slot-button" onclick="selectTimeSlot('全日')">全日</button>
+      <button class="time-slot-button" onclick="selectTimeSlot('午前')">午前</button>
+      <button class="time-slot-button" onclick="selectTimeSlot('午後')">午後</button>
+    </div>
+  </div>
+
   <script>
     let userName = "";
+    let currentReservationId = null; // 選択された予約のIDを保持
     const reservations = [
       {
         id: 1,
@@ -275,7 +341,7 @@
         // Firebaseから現在のエントリー人数を取得
         const snapshot = await firebase.database().ref('reservations/' + res.id + '/entries').once('value');
         const currentEntries = snapshot.val() ? Object.keys(snapshot.val()).length : 0;
-        const isUserReserved = snapshot.val() ? Object.values(snapshot.val()).includes(userName) : false;
+        const isUserReserved = snapshot.val() ? Object.values(snapshot.val()).some(entry => entry.userName === userName) : false; // ユーザー名と勤務時間の両方を確認
 
         // エントリーボタンの表示と有効/無効の制御
         if (isUserReserved) {
@@ -294,15 +360,10 @@
             entryButton.classList.add('entry-button');
         }
 
-        entryButton.onclick = async () => {
+        entryButton.onclick = () => {
             if (currentEntries < res.maxEntries) {
-                await firebase.database().ref('reservations/' + res.id + '/entries').push(userName);
-                
-                // localStorage.setItem("reservations", JSON.stringify(reservations)); // この行は不要になる
-                
-                alert(`${userName} さんが ${res.store} にエントリーしました。`);
-                renderReservations(); // 再描画して最新の状態を反映
-                updateReservationLog(); // 予約一覧も更新
+                currentReservationId = res.id; // 現在選択された予約のIDを保存
+                openTimeSelectionModal();
             } else {
                 alert("この予約は満員です。");
             }
@@ -312,13 +373,12 @@
           const reservationRef = firebase.database().ref('reservations/' + res.id + '/entries');
           await reservationRef.once('value', snapshot => {
             snapshot.forEach(child => {
-              if (child.val() === userName) {
-                child.ref.remove(); // 一致する名前のエントリーを削除
+              if (child.val().userName === userName) { // ユーザー名で一致するエントリーを削除
+                child.ref.remove(); 
               }
             });
           });
 
-          // localStorage.setItem("reservations", JSON.stringify(reservations)); // この行は不要になる
           alert(`${userName} さんの予約をキャンセルしました。`);
           renderReservations(); // 再描画して最新の状態を反映
           updateReservationLog(); // 予約一覧も更新
@@ -335,6 +395,49 @@
       }
     }
 
+    function openTimeSelectionModal() {
+      document.getElementById("timeSelectionModal").style.display = "flex";
+    }
+
+    function closeTimeSelectionModal() {
+      document.getElementById("timeSelectionModal").style.display = "none";
+      currentReservationId = null; // モーダルを閉じたらIDをリセット
+    }
+
+    async function selectTimeSlot(timeSlot) {
+      if (currentReservationId === null) {
+        alert("エラー: 予約IDが見つかりません。");
+        return;
+      }
+
+      const reservationRef = firebase.database().ref('reservations/' + currentReservationId + '/entries');
+      const snapshot = await reservationRef.once('value');
+      const entries = snapshot.val();
+      const currentEntriesCount = entries ? Object.keys(entries).length : 0;
+      
+      const selectedReservation = reservations.find(res => res.id === currentReservationId);
+
+      if (currentEntriesCount >= selectedReservation.maxEntries) {
+        alert("この予約は満員です。");
+        closeTimeSelectionModal();
+        return;
+      }
+
+      // 同じユーザーが同じ時間帯で既に予約していないかチェック
+      const isAlreadyBooked = entries ? Object.values(entries).some(entry => entry.userName === userName && entry.timeSlot === timeSlot) : false;
+      if (isAlreadyBooked) {
+        alert(`${userName} さんは既にこの時間帯でエントリーしています。`);
+        closeTimeSelectionModal();
+        return;
+      }
+
+      await reservationRef.push({ userName: userName, timeSlot: timeSlot });
+      alert(`${userName} さんが ${selectedReservation.store} に ${timeSlot} でエントリーしました。`);
+      closeTimeSelectionModal();
+      renderReservations(); 
+      updateReservationLog(); 
+    }
+
     // 変更点：updateReservationLog 関数を async に変更し、Firebaseからデータを取得するようにする
     async function updateReservationLog() {
       const log = document.getElementById("logContent");
@@ -343,16 +446,22 @@
 
       for (const res of reservations) {
         const snapshot = await firebase.database().ref('reservations/' + res.id + '/entries').once('value');
-        const isUserReserved = snapshot.val() ? Object.values(snapshot.val()).includes(userName) : false;
+        const entries = snapshot.val();
 
-        if (isUserReserved) {
-          reservedEntriesHtml += `
-            <p><strong>日付:</strong> ${res.date}</p>
-            <p><strong>店舗名:</strong> ${res.store}</p>
-            <p><strong>住所:</strong> ${res.address}</p>
-            <hr>
-          `;
-          hasReservation = true;
+        if (entries) {
+          // entriesオブジェクトをループして、各エントリーをチェック
+          for (const key in entries) {
+            if (entries[key].userName === userName) {
+              reservedEntriesHtml += `
+                <p><strong>日付:</strong> ${res.date}</p>
+                <p><strong>店舗名:</strong> ${res.store}</p>
+                <p><strong>住所:</strong> ${res.address}</p>
+                <p><strong>時間帯:</strong> ${entries[key].timeSlot}</p>
+                <hr>
+              `;
+              hasReservation = true;
+            }
+          }
         }
       }
 
@@ -361,6 +470,7 @@
       } else {
         log.innerHTML = reservedEntriesHtml;
       }
+      document.getElementById("reservationLog").style.display = "block"; // 予約ログを表示
     }
 
     function showReservationLog() {
@@ -368,21 +478,6 @@
       document.getElementById("reservationLog").style.display = "block";
       window.scrollTo(0, document.body.scrollHeight);
     }
-
-    //window.onload = () => {
-      //const savedName = localStorage.getItem("userName");
-
-      //if (savedName) {
-        //userName = savedName;
-        //document.getElementById("nameContainer").style.display = "none";
-        //document.getElementById("reservationContainer").style.display = "flex";
-        
-        // localStorageから予約状況を読み込む部分を削除（Firebaseから直接取得するため）
-        //renderReservations();
-        //updateReservationLog();
-      //}
-    //};
-
   </script>
 
 </body>
