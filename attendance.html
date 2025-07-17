@@ -82,21 +82,6 @@
       font-weight: bold;
     }
 
-    /* 新しい時間選択ボックスのスタイル */
-    .time-select-group {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
-
-    .time-select-group select {
-        padding: 8px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        box-sizing: border-box;
-        font-size: 1em;
-    }
-    
     /* 勤務時間入力欄の横並び調整 */
     .time-inputs {
         display: flex;
@@ -115,15 +100,20 @@
         font-weight: bold;
     }
 
-    .card input[type="number"] {
-      width: calc(100% - 22px); /* paddingとborderを考慮 */
-      padding: 10px;
-      margin-bottom: 10px;
+    /* セレクトボックスの共通スタイル */
+    select {
+      padding: 8px;
       border: 1px solid #ccc;
       border-radius: 4px;
       box-sizing: border-box;
+      font-size: 1em;
+      margin-bottom: 10px; /* input[type="number"]と同じ間隔を確保 */
     }
 
+    /* 交通費のセレクトボックスの幅調整 */
+    #travelCostSelect {
+        width: 100%; /* 親要素の幅いっぱいに広げる */
+    }
 
     .register-button {
       background-color: #28a745;
@@ -246,6 +236,15 @@
         return options;
     }
 
+    // 交通費のオプションを生成するヘルパー関数
+    function generateTravelCostOptions() {
+        let options = '';
+        for (let i = 500; i <= 5000; i += 100) { // 500円から5000円まで100円刻み
+            options += `<option value="${i}">${i}円</option>`;
+        }
+        return options;
+    }
+
     async function loadPastReservations() {
       const pastReservationsDiv = document.getElementById("pastReservations");
       pastReservationsDiv.innerHTML = "";
@@ -296,6 +295,10 @@
             const defaultStartMinute = defaultStartTime.split(':')[1];
             const defaultEndHour = defaultEndTime.split(':')[0];
             const defaultEndMinute = defaultEndTime.split(':')[1];
+            
+            // 交通費の初期値を取得 (またはデフォルト値)
+            const defaultTravelCost = firstEntry.travelCost || 500;
+
 
             card.innerHTML = `
               <p><strong>日付:</strong> ${res.date}</p>
@@ -329,8 +332,10 @@
                     </div>
                 </div>
 
-                <label for="travelCost-${res.id}-${firstEntry.entryId}">交通費:</label>
-                <input type="number" id="travelCost-${res.id}-${firstEntry.entryId}" value="${firstEntry.travelCost || 500}" min="0" step="100">
+                <label for="travelCostSelect-${res.id}-${firstEntry.entryId}">交通費:</label>
+                <select id="travelCostSelect-${res.id}-${firstEntry.entryId}" required>
+                    ${generateTravelCostOptions()}
+                </select>
 
                 <button type="submit" class="register-button">登録</button>
               </form>
@@ -342,6 +347,8 @@
             document.getElementById(`startMinute-${res.id}-${firstEntry.entryId}`).value = defaultStartMinute;
             document.getElementById(`endHour-${res.id}-${firstEntry.entryId}`).value = defaultEndHour;
             document.getElementById(`endMinute-${res.id}-${firstEntry.entryId}`).value = defaultEndMinute;
+            document.getElementById(`travelCostSelect-${res.id}-${firstEntry.entryId}`).value = defaultTravelCost;
+
           }
         }
       }
@@ -358,24 +365,18 @@
       const startMinuteInput = document.getElementById(`startMinute-${reservationId}-${entryId}`);
       const endHourInput = document.getElementById(`endHour-${reservationId}-${entryId}`);
       const endMinuteInput = document.getElementById(`endMinute-${reservationId}-${entryId}`);
-      const travelCostInput = document.getElementById(`travelCost-${reservationId}-${entryId}`);
+      const travelCostSelect = document.getElementById(`travelCostSelect-${reservationId}-${entryId}`);
 
       const startTime = `${startHourInput.value}:${startMinuteInput.value}`;
       const endTime = `${endHourInput.value}:${endMinuteInput.value}`;
-      const travelCost = parseInt(travelCostInput.value, 10);
+      const travelCost = parseInt(travelCostSelect.value, 10); // selectボックスから値を取得
 
       if (!startTime || !endTime) { // selectボックスなので通常は空にならないが念のため
           alert("勤務開始時間と終了時間を入力してください。");
           return;
       }
-      if (travelCost < 0) {
-          alert("交通費は0以上の値を入力してください。");
-          return;
-      }
-      if (travelCost % 100 !== 0) {
-          alert("交通費は100円単位で入力してください。");
-          return;
-      }
+      // 交通費はセレクトボックスで制御されるため、0以上であることや100円単位であることのチェックは不要になる
+      // ただし、念のためparseIntがNaNにならないようにしておく
 
       const attendanceRef = db.ref(`reservations/${reservationId}/entries/${entryId}`);
       try {
