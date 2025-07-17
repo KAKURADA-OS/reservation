@@ -61,7 +61,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 20px; /* カード間の隙間 */
+      /* gapプロパティは#workHistoryContainerに移動 */
     }
 
     .card {
@@ -71,7 +71,7 @@
       width: 90%;
       max-width: 550px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      position: relative; /* 修正フォームの配置のために追加 */
+      position: relative;
     }
 
     .card p {
@@ -87,7 +87,7 @@
       cursor: pointer;
       font-size: 14px;
       margin-top: 10px;
-      margin-right: 5px; /* ボタン間の隙間 */
+      margin-right: 5px;
     }
 
     .card button:hover {
@@ -101,9 +101,18 @@
       color: #666;
     }
 
+    /* カード間の隙間を制御する新しいスタイル (attendance.htmlに合わせる) */
+    #workHistoryContainer {
+        display: flex;
+        flex-direction: column;
+        gap: 20px; /* ここでカード間の隙間を定義 */
+        width: 100%; /* containerの幅に合わせる */
+        align-items: center; /* カードを中央に寄せる */
+    }
+
     /* 修正フォームのスタイル */
     .edit-form {
-      display: none; /* 初期状態では非表示 */
+      display: none;
       background-color: #f9f9f9;
       border: 1px solid #ddd;
       padding: 15px;
@@ -177,8 +186,10 @@
   </div>
 
   <h2>勤務履歴</h2>
-  <div class="container" id="workHistoryContainer">
-    <p class="no-history-message" id="loadingMessage">勤務履歴を読み込み中です...</p>
+  <div class="container">
+    <div id="workHistoryContainer">
+      <p class="no-history-message" id="loadingMessage">勤務履歴を読み込み中です...</p>
+    </div>
   </div>
 
   <script>
@@ -254,8 +265,8 @@
     const dailyIncomeTaxRates = [
       3,6,10,13,17,20,24,27,31,34,38,41,45,49,53,56,60,63,67,70,74,77,81,84,88,91,95,99,103,106,110,113,117,120,124,127,131,134,138,141,146,149,153,156,160,164,168,172,176,180,184,188,192,197,201,205,209,213,217,221,225,229,233,237,241,246,250,254
     ];
-    const dailyIncomeTaxStartAmount = 9300; // 税額計算の開始収入額（円）
-    const dailyIncomeTaxInterval = 100; // 税額の増分単位（円）
+    const dailyIncomeTaxStartAmount = 9300;
+    const dailyIncomeTaxInterval = 100;
 
     function calculateDailyIncomeTax(grossSalaryBeforeTax) {
         if (grossSalaryBeforeTax < dailyIncomeTaxStartAmount) {
@@ -274,13 +285,13 @@
     }
 
     async function loadWorkHistory() {
-      const workHistoryContainer = document.getElementById("workHistoryContainer");
+      const workHistoryContainerDiv = document.getElementById("workHistoryContainer");
       const loadingMessage = document.getElementById("loadingMessage");
-      workHistoryContainer.innerHTML = ""; // 既存の内容をクリア
+      workHistoryContainerDiv.innerHTML = "";
 
       userName = localStorage.getItem("userName");
       if (!userName) {
-        workHistoryContainer.innerHTML = "<p class='no-history-message'>ユーザー名が登録されていません。メインページに戻って名前を登録してください。</p>";
+        workHistoryContainerDiv.innerHTML = "<p class='no-history-message'>ユーザー名が登録されていません。メインページに戻って名前を登録してください。</p>";
         return;
       }
 
@@ -298,7 +309,7 @@
 
               const card = document.createElement("div");
               card.className = "card";
-              card.id = `card-${res.id}-${entryId}`; // カードにユニークなIDを設定
+              card.id = `card-${res.id}-${entryId}`;
 
               card.innerHTML = `
                 <p><strong>日付:</strong> ${res.date}</p>
@@ -358,50 +369,46 @@
                   </div>
                 </div>
               `;
-              workHistoryContainer.appendChild(card);
+              workHistoryContainerDiv.appendChild(card);
             }
           }
         }
       }
 
       if (!hasHistory) {
-        workHistoryContainer.innerHTML = "<p class='no-history-message'>これまでの勤務履歴はありません。</p>";
+        workHistoryContainerDiv.innerHTML = "<p class='no-history-message'>これまでの勤務履歴はありません。</p>";
       }
     }
 
-    // 修正フォームを表示する関数
     function openEditForm(buttonElement, reservationId, entryId, startTime, endTime, restTime, travelCost) {
         const editForm = document.getElementById(`editForm-${reservationId}-${entryId}`);
         if (editForm) {
-            // 現在の値をフォームに設定
             const [startHour, startMinute] = startTime.split(':');
             const [endHour, endMinute] = endTime.split(':');
 
-            document.getElementById(`editStartHour-${reservationId}-${entryId}`).value = startHour || '09'; // デフォルト値
+            document.getElementById(`editStartHour-${reservationId}-${entryId}`).value = startHour || '09';
             document.getElementById(`editStartMinute-${reservationId}-${entryId}`).value = startMinute || '00';
             document.getElementById(`editEndHour-${reservationId}-${entryId}`).value = endHour || '18';
             document.getElementById(`editEndMinute-${reservationId}-${entryId}`).value = endMinute || '00';
             document.getElementById(`editRestTimeSelect-${reservationId}-${entryId}`).value = restTime || '0';
             document.getElementById(`editTravelCostSelect-${reservationId}-${entryId}`).value = travelCost || '0';
 
-            editForm.style.display = 'block'; // フォームを表示
-            buttonElement.style.display = 'none'; // 修正ボタンを非表示
+            editForm.style.display = 'block';
+            buttonElement.style.display = 'none';
         }
     }
 
-    // 修正フォームを非表示にする関数
     function cancelEditForm(reservationId, entryId) {
         const editForm = document.getElementById(`editForm-${reservationId}-${entryId}`);
-        const editButton = editForm.previousElementSibling; // フォームの直前の要素（修正ボタン）を取得
+        const editButton = editForm.previousElementSibling;
         if (editForm && editButton) {
-            editForm.style.display = 'none'; // フォームを非表示
-            editButton.style.display = 'inline-block'; // 修正ボタンを再表示
+            editForm.style.display = 'none';
+            editButton.style.display = 'inline-block';
         }
     }
 
-    // 修正された勤怠情報を保存する関数
     async function saveEditedAttendance(event, reservationId, entryId) {
-      event.preventDefault(); // デフォルトのフォーム送信を防ぐ
+      event.preventDefault();
 
       const startHourInput = document.getElementById(`editStartHour-${reservationId}-${entryId}`);
       const startMinuteInput = document.getElementById(`editStartMinute-${reservationId}-${entryId}`);
@@ -420,7 +427,6 @@
           return;
       }
 
-      // 勤務時間計算 (attendance.htmlからコピー)
       const today = new Date();
       const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), parseInt(startHourInput.value), parseInt(startMinuteInput.value), 0);
       let endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), parseInt(endHourInput.value), parseInt(endMinuteInput.value), 0);
@@ -472,8 +478,7 @@
         });
         alert("勤怠情報が修正されました！");
         
-        // 修正が成功したら、表示を更新
-        await loadWorkHistory(); // 履歴を再読み込みして最新の状態を表示
+        await loadWorkHistory();
 
       } catch (error) {
         console.error("勤怠情報の修正中にエラーが発生しました:", error);
@@ -481,7 +486,6 @@
       }
     }
 
-    // ページロード時に匿名認証を行い、その後勤務履歴を表示
     auth.signInAnonymously()
       .then(() => {
         console.log("匿名ユーザーがサインインしました (work_history.html)。");
