@@ -145,6 +145,7 @@
     <a href="list.html">予約一覧</a>
     <a href="attendance.html">勤怠登録</a>
     <a href="work_history.html">勤務履歴</a>
+    <a href="approved_list.html">承認一覧</a>
   </div>
 
   <h2>勤怠確認</h2>
@@ -230,8 +231,10 @@
         if (entries) {
           for (const key in entries) {
             const entry = entries[key];
-            // calculatedSalary が存在し、null でない場合のみ表示
-            if (entry.calculatedSalary !== undefined && entry.calculatedSalary !== null) {
+            // calculatedSalary が存在し、null でなく、revisionRequested が true でない
+            // かつ status が 'approved' でない場合のみ表示
+            if (entry.calculatedSalary !== undefined && entry.calculatedSalary !== null &&
+                entry.revisionRequested !== true && entry.status !== 'approved') {
               hasEntriesToConfirm = true;
 
               const card = document.createElement("div");
@@ -266,20 +269,15 @@
     }
 
     async function approveAttendance(reservationId, entryId, button) {
-      if (confirm("この勤怠情報を承認しますか？承認するとこのリストから削除されます。")) {
+      if (confirm("この勤怠情報を承認しますか？承認するとこのリストから削除され、承認一覧に移動します。")) {
         const attendanceRef = db.ref(`reservations/${reservationId}/entries/${entryId}`);
         try {
-          // 勤怠情報の承認フラグなどを設定することも可能ですが、
-          // 今回の要件では「承認したらページからカードを削除」なので、Firebaseからは特に削除せず、
-          // ページ表示時のフィルタリング（calculatedSalaryの有無）で対応する形でも良いでしょう。
-          // もし完全に削除したい場合は以下のようにremove()を使用します。
-          // await attendanceRef.remove(); // Firebaseからエントリーを削除する場合
-
-          // 現時点では、calculatedSalaryが存在するものを表示しているので、
-          // 承認後のカードの扱いについて、Firebaseでの状態管理の変更がないため
-          // 単にフロントエンドからカードを削除するだけとします。
-          // 将来的に「承認済み」というステータスをFirebaseに持たせる場合は、
-          // attendanceRef.update({ status: 'approved' }); のように変更してください。
+          // 承認された勤怠情報には revisionRequested を false に設定し、承認済みであることを示す
+          await attendanceRef.update({
+            revisionRequested: false,
+            status: 'approved', // 新たに承認済みステータスを追加
+            approvedAt: new Date().toISOString() // 承認日時を追加
+          });
 
           const cardElement = button.closest('.card');
           if (cardElement) {
@@ -311,7 +309,8 @@
             calculatedSalary: null, // attendance.html で未登録として再表示されるようにする
             revisionRequested: true,
             revisionReason: reason,
-            revisionRequestedAt: new Date().toISOString()
+            revisionRequestedAt: new Date().toISOString(),
+            status: 'pending_revision' // 修正依頼中ステータスを追加
           });
           alert("修正依頼を送信しました。");
 
