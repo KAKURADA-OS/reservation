@@ -64,8 +64,7 @@
     .user-name {
       font-weight: bold;
       color: #28a745;
-      margin-right: 10px; /* 名前の間のスペース */
-      display: inline-block; /* 横並びにするため */
+      margin-bottom: 5px; /* 各名前の下に少し余白 */
     }
 
     .time-slot-section {
@@ -77,6 +76,14 @@
     .time-slot-section h4 {
       margin-top: 0;
       color: #333;
+      display: inline-block; /* 人数表示と並列にするため */
+      margin-right: 10px; /* 人数表示との間隔 */
+    }
+
+    .entry-count {
+        font-size: 0.9em;
+        color: #555;
+        display: inline-block;
     }
   </style>
 </head>
@@ -94,35 +101,46 @@
         date: "2025年6月15日",
         store: "サンプルカフェ渋谷店",
         address: "東京都渋谷区○○1-2-3",
-        maxEntries: 2
+        maxEntriesAllDay: 2, // 全日最大人数
+        maxEntriesMorning: 1, // 午前最大人数
+        maxEntriesAfternoon: 1, // 午後最大人数
+        // maxEntries: 2 // 全体としての最大人数 (互換性のため残すことも可能だが、今回は各時間帯を優先)
       },
       {
         id: 2,
         date: "2025年6月15日",
         store: "サンプルカフェ新宿店",
         address: "東京都新宿区△△4-5-6",
-        maxEntries: 3
+        maxEntriesAllDay: 3,
+        maxEntriesMorning: 2,
+        maxEntriesAfternoon: 2,
       },
       {
         id: 3,
         date: "2025年6月15日",
         store: "サンプルカフェ練馬店",
         address: "東京都練馬区△△4-5-6",
-        maxEntries: 1
+        maxEntriesAllDay: 1,
+        maxEntriesMorning: 1,
+        maxEntriesAfternoon: 0, // 例: 午後は予約不可
       },
       {
         id: 4,
         date: "2025年6月15日",
         store: "サンプルカフェ中野店",
         address: "東京都中野区△△4-5-6",
-        maxEntries: 5
+        maxEntriesAllDay: 5,
+        maxEntriesMorning: 3,
+        maxEntriesAfternoon: 3,
       },
       {
         id: 5,
         date: "2025年6月15日",
         store: "サンプルカフェ東京店",
         address: "東京都千代田区△△4-5-6",
-        maxEntries: 2
+        maxEntriesAllDay: 2,
+        maxEntriesMorning: 1,
+        maxEntriesAfternoon: 1,
       }
     ];
 
@@ -169,34 +187,34 @@
             `;
 
             // 全日セクション
-            if (allDayEntries.length > 0) {
+            if (reservationDetail.maxEntriesAllDay !== undefined) { // maxEntriesAllDayが定義されている場合
               const allDaySection = document.createElement("div");
               allDaySection.className = "time-slot-section";
               allDaySection.innerHTML = `
-                <h4>全日</h4>
-                <p>${allDayEntries.map(name => `<span class="user-name">${name}</span>`).join("")}</p>
+                <h4>全日</h4><span class="entry-count"> (${allDayEntries.length}/${reservationDetail.maxEntriesAllDay}人)</span>
+                <div>${allDayEntries.map(name => `<div class="user-name">${name}</div>`).join("")}</div>
               `;
               card.appendChild(allDaySection);
             }
 
             // 午前セクション
-            if (morningEntries.length > 0) {
+            if (reservationDetail.maxEntriesMorning !== undefined) { // maxEntriesMorningが定義されている場合
               const morningSection = document.createElement("div");
               morningSection.className = "time-slot-section";
               morningSection.innerHTML = `
-                <h4>午前</h4>
-                <p>${morningEntries.map(name => `<span class="user-name">${name}</span>`).join("")}</p>
+                <h4>午前</h4><span class="entry-count"> (${morningEntries.length}/${reservationDetail.maxEntriesMorning}人)</span>
+                <div>${morningEntries.map(name => `<div class="user-name">${name}</div>`).join("")}</div>
               `;
               card.appendChild(morningSection);
             }
 
             // 午後セクション
-            if (afternoonEntries.length > 0) {
+            if (reservationDetail.maxEntriesAfternoon !== undefined) { // maxEntriesAfternoonが定義されている場合
               const afternoonSection = document.createElement("div");
               afternoonSection.className = "time-slot-section";
               afternoonSection.innerHTML = `
-                <h4>午後</h4>
-                <p>${afternoonEntries.map(name => `<span class="user-name">${name}</span>`).join("")}</p>
+                <h4>午後</h4><span class="entry-count"> (${afternoonEntries.length}/${reservationDetail.maxEntriesAfternoon}人)</span>
+                <div>${afternoonEntries.map(name => `<div class="user-name">${name}</div>`).join("")}</div>
               `;
               card.appendChild(afternoonSection);
             }
