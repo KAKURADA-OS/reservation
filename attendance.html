@@ -161,6 +161,17 @@
         width: 100%; /* containerの幅に合わせる */
         align-items: center; /* カードを中央に寄せる */
     }
+
+    .revision-requested-message {
+        color: #d8000c; /* 修正依頼のメッセージ色 */
+        font-weight: bold;
+        margin-top: 10px;
+        padding: 5px;
+        border: 1px solid #d8000c;
+        border-radius: 5px;
+        background-color: #ffcccc;
+        text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -171,7 +182,7 @@
     <a href="index.html">予約</a>
     <a href="list.html">予約一覧</a>
     <a href="work_history.html">勤務履歴</a>
-    <a href="entries.html">予約者一覧</a>
+    
   </div>
 
   <h2>勤怠登録</h2>
@@ -352,8 +363,9 @@
           if (userEntriesForThisReservation.length > 0) {
             const firstEntry = userEntriesForThisReservation[0];
 
-            // 勤怠情報が未登録の場合のみ表示（calculatedSalaryが存在しない場合）
-            if (firstEntry.calculatedSalary === undefined || firstEntry.calculatedSalary === null) {
+            // 勤怠情報が未登録の場合（calculatedSalaryが存在しない、またはnull）
+            // または、修正依頼があった場合（revisionRequestedがtrue）に表示
+            if (firstEntry.calculatedSalary === undefined || firstEntry.calculatedSalary === null || firstEntry.revisionRequested === true) {
               hasPastReservationToRegister = true;
 
               const card = document.createElement("div");
@@ -372,12 +384,17 @@
               // 休憩時間の初期値を取得 (またはデフォルト値)
               const defaultRestTime = firstEntry.restTime || 60; // デフォルトは60分に設定
 
+              let revisionMessage = '';
+              if (firstEntry.revisionRequested === true && firstEntry.revisionReason) {
+                revisionMessage = `<p class="revision-requested-message">修正依頼: ${firstEntry.revisionReason}</p>`;
+              }
 
               card.innerHTML = `
                 <p><strong>日付:</strong> ${res.date}</p>
                 <p><strong>店舗名:</strong> ${res.store}</p>
                 <p><strong>住所:</strong> ${res.address}</p>
                 <p><strong>予約時間帯:</strong> ${firstEntry.timeSlot}</p>
+                ${revisionMessage}
                 <hr>
                 <form onsubmit="submitAttendance(event, '${res.id}', '${firstEntry.entryId}')">
                   <label>勤務時間:</label>
@@ -524,6 +541,9 @@
           restTime: restTimeMinutes, // 休憩時間を保存
           travelCost: travelCost,
           calculatedSalary: calculatedSalary, // 計算された給料を保存
+          revisionRequested: false, // 登録し直したので修正依頼フラグをリセット
+          revisionReason: null, // 理由もリセット
+          revisionRequestedAt: null, // 依頼日時もリセット
           updatedAt: new Date().toISOString() // 更新日時を追加
         });
         alert("勤怠情報が登録されました");
