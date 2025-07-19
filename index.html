@@ -122,11 +122,17 @@
     .register-button { background-color: #28a745; }
     .entry-button    { background-color: #007BFF; }
     .cancel-button   { background-color: #dc3545; }
-    /* 新しいスタイルを追加 */
-    .closed-button   { background-color: #6c757d; cursor: not-allowed; } /* 少し暗いグレーに */
+    /* エントリー済みボタンの新しいスタイル */
+    .reserved-button { background-color: #007BFF; cursor: not-allowed; } /* エントリー済みは青色でカーソル無効 */
+    .closed-button   { background-color: #6c757d; cursor: not-allowed; } /* 受付終了はグレー */
     .button:hover    { opacity: 0.9; }
-    /* closed-button の hover 効果を調整 */
-    .closed-button:hover { opacity: 1; }
+    /* disabledまたは特定のクラスのボタンのhover効果を調整 */
+    .closed-button:hover,
+    .reserved-button:hover, /* エントリー済みボタンにもhover効果を無効化 */
+    .time-slot-button:disabled:hover,
+    .time-slot-button.closed-slot:hover {
+        opacity: 1; /* ホバー効果を無効化 */
+    }
 
     /* 予約ログ関連のスタイルを削除またはコメントアウト */
     /*
@@ -218,6 +224,14 @@
       opacity: 0.9;
     }
 
+    /* 無効化された時間帯ボタンのスタイル */
+    .time-slot-button:disabled,
+    .time-slot-button.closed-slot { /* closed-slot クラスを新たに定義 */
+        background-color: #6c757d; /* グレーアウト */
+        cursor: not-allowed;
+        opacity: 1; /* ホバーで透明度が変わらないように */
+    }
+
   </style>
 </head>
 <body>
@@ -230,7 +244,7 @@
     <a href="work_history.html">勤務履歴</a>
     <a href="entries.html">予約者一覧</a>
     <a href="confirmation.html">勤怠確認</a>
-
+    <a href="approved_list.html">承認一覧</a>
   </div>
 
   <div class="container" id="nameContainer">
@@ -248,9 +262,9 @@
     <div class="modal-content">
       <span class="close-button" onclick="closeTimeSelectionModal()">&times;</span>
       <h3>勤務時間を選択してください</h3>
-      <button class="time-slot-button" onclick="selectTimeSlot('全日')">全日 (9~18時)</button>
-      <button class="time-slot-button" onclick="selectTimeSlot('午前')">午前 (9~13時)</button>
-      <button class="time-slot-button" onclick="selectTimeSlot('午後')">午後 (13~18時)</button>
+      <button id="allDayBtn" class="time-slot-button" onclick="selectTimeSlot('全日')">全日 (9~18時)</button>
+      <button id="morningBtn" class="time-slot-button" onclick="selectTimeSlot('午前')">午前 (9~13時)</button>
+      <button id="afternoonBtn" class="time-slot-button" onclick="selectTimeSlot('午後')">午後 (13~18時)</button>
     </div>
   </div>
 
@@ -263,35 +277,45 @@
         date: "2025年6月15日",
         store: "サンプルカフェ渋谷店",
         address: "東京都渋谷区○○1-2-3",
-        maxEntries: 2
+        maxEntriesAllDay: 0, // 全日最大人数
+        maxEntriesMorning: 0, // 午前最大人数
+        maxEntriesAfternoon: 0, // 午後最大人数
       },
       {
         id: 2,
-        date: "2025年8月15日",
+        date: "2025年6月15日",
         store: "サンプルカフェ新宿店",
         address: "東京都新宿区△△4-5-6",
-        maxEntries: 3
+        maxEntriesAllDay: 3,
+        maxEntriesMorning: 2,
+        maxEntriesAfternoon: 2,
       },
       {
         id: 3,
-        date: "2025年8月15日",
+        date: "2025年6月15日",
         store: "サンプルカフェ練馬店",
         address: "東京都練馬区△△4-5-6",
-        maxEntries: 1
+        maxEntriesAllDay: 1,
+        maxEntriesMorning: 1,
+        maxEntriesAfternoon: 0, // 例: 午後は予約不可
       },
       {
         id: 4,
-        date: "2025年8月15日",
+        date: "2025年6月15日",
         store: "サンプルカフェ中野店",
         address: "東京都中野区△△4-5-6",
-        maxEntries: 5
+        maxEntriesAllDay: 5,
+        maxEntriesMorning: 3,
+        maxEntriesAfternoon: 3,
       },
       {
         id: 5,
-        date: "2025年8月15日",
+        date: "2025年6月15日",
         store: "サンプルカフェ東京店",
         address: "東京都千代田区△△4-5-6",
-        maxEntries: 2
+        maxEntriesAllDay: 2,
+        maxEntriesMorning: 1,
+        maxEntriesAfternoon: 1,
       }
     ];
 
@@ -339,33 +363,60 @@
 
         // Firebaseから現在のエントリー人数を取得
         const snapshot = await firebase.database().ref('reservations/' + res.id + '/entries').once('value');
-        const currentEntries = snapshot.val() ? Object.keys(snapshot.val()).length : 0;
-        const isUserReserved = snapshot.val() ? Object.values(snapshot.val()).some(entry => entry.userName === userName) : false; // ユーザー名と勤務時間の両方を確認
+        const entriesInFirebase = snapshot.val() || {};
+        
+        // 各時間帯のエントリー数をカウント
+        let allDayCount = 0;
+        let morningCount = 0;
+        let afternoonCount = 0;
+        let isUserReservedInAnySlot = false; // ユーザーが何かしらの時間帯で予約済みか
 
-        // エントリーボタンの表示と有効/無効の制御
-        if (isUserReserved) {
-            entryButton.textContent = "エントリー済み";
-            entryButton.disabled = true;
-            cancelButton.style.display = "block";
-        } else if (currentEntries >= res.maxEntries) {
-            entryButton.textContent = "受付終了";
-            entryButton.disabled = true;
-            entryButton.classList.remove('entry-button');
-            entryButton.classList.add('closed-button');
-        } else {
-            entryButton.textContent = `エントリー`;
-            entryButton.disabled = false;
-            entryButton.classList.remove('closed-button');
-            entryButton.classList.add('entry-button');
+        for (const key in entriesInFirebase) {
+            const entry = entriesInFirebase[key];
+            if (entry.userName === userName) {
+                isUserReservedInAnySlot = true; // ユーザーが一つでも予約していればtrue
+            }
+            if (entry.timeSlot === '全日') {
+                allDayCount++;
+            } else if (entry.timeSlot === '午前') {
+                morningCount++;
+            } else if (entry.timeSlot === '午後') {
+                afternoonCount++;
+            }
         }
 
-        entryButton.onclick = () => {
-            if (currentEntries < res.maxEntries) {
-                currentReservationId = res.id; // 現在選択された予約のIDを保存
-                openTimeSelectionModal();
+        // エントリーボタンの表示と有効/無効の制御
+        if (isUserReservedInAnySlot) {
+            entryButton.textContent = "エントリー済み";
+            entryButton.disabled = true;
+            entryButton.classList.remove('entry-button', 'closed-button'); // 既存のクラスを削除
+            entryButton.classList.add('reserved-button'); // 新しいreserved-buttonクラスを追加
+            cancelButton.style.display = "block";
+        } else {
+            // ここでは時間帯ごとの空き状況ではなく、ボタンを表示するかどうかを判断
+            // モーダルで個別の時間帯の空きをチェックするため、ここではざっくりと判断
+            // 例えば、いずれかの時間帯に空きがあるか、または全ての時間帯が満員か
+            const hasAvailableSlot = (allDayCount < res.maxEntriesAllDay) ||
+                                     (morningCount < res.maxEntriesMorning) ||
+                                     (afternoonCount < res.maxEntriesAfternoon);
+
+            if (hasAvailableSlot) {
+                entryButton.textContent = `エントリー`;
+                entryButton.disabled = false;
+                entryButton.classList.remove('reserved-button', 'closed-button'); // 既存のクラスを削除
+                entryButton.classList.add('entry-button');
             } else {
-                alert("この予約は満員です。");
+                entryButton.textContent = "受付終了";
+                entryButton.disabled = true;
+                entryButton.classList.remove('reserved-button', 'entry-button'); // 既存のクラスを削除
+                entryButton.classList.add('closed-button');
             }
+        }
+
+
+        entryButton.onclick = () => {
+            currentReservationId = res.id; // 現在選択された予約のIDを保存
+            openTimeSelectionModal();
         };
 
         cancelButton.onclick = async () => {
@@ -394,9 +445,81 @@
       }
     }
 
-    function openTimeSelectionModal() {
-      document.getElementById("timeSelectionModal").style.display = "flex";
+    async function openTimeSelectionModal() {
+      const modal = document.getElementById("timeSelectionModal");
+      const allDayBtn = document.getElementById("allDayBtn");
+      const morningBtn = document.getElementById("morningBtn");
+      const afternoonBtn = document.getElementById("afternoonBtn");
+
+      // ボタンの有効/無効状態をリセット
+      allDayBtn.disabled = false;
+      morningBtn.disabled = false;
+      afternoonBtn.disabled = false;
+      allDayBtn.classList.remove('closed-slot');
+      morningBtn.classList.remove('closed-slot');
+      afternoonBtn.classList.remove('closed-slot');
+
+      if (currentReservationId === null) {
+        console.error("エラー: 予約IDが見つかりません。");
+        return;
+      }
+
+      const selectedReservation = reservations.find(res => res.id === currentReservationId);
+      if (!selectedReservation) {
+        console.error("エラー: 選択された予約情報が見つかりません。");
+        return;
+      }
+
+      const reservationRef = firebase.database().ref('reservations/' + currentReservationId + '/entries');
+      const snapshot = await reservationRef.once('value');
+      const entriesInFirebase = snapshot.val() || {};
+
+      let allDayCount = 0;
+      let morningCount = 0;
+      let afternoonCount = 0;
+      let isUserBookedInAnySlot = false; // ユーザーが何かしらの時間帯で既に予約しているか
+
+      for (const key in entriesInFirebase) {
+          const entry = entriesInFirebase[key];
+          if (entry.userName === userName) {
+              isUserBookedInAnySlot = true;
+          }
+          if (entry.timeSlot === '全日') {
+              allDayCount++;
+          } else if (entry.timeSlot === '午前') {
+              morningCount++;
+          } else if (entry.timeSlot === '午後') {
+              afternoonCount++;
+          }
+      }
+
+      // ユーザーが既に他の時間帯で予約している場合、全てグレーアウト
+      if (isUserBookedInAnySlot) {
+        allDayBtn.disabled = true;
+        morningBtn.disabled = true;
+        afternoonBtn.disabled = true;
+        allDayBtn.classList.add('closed-slot');
+        morningBtn.classList.add('closed-slot');
+        afternoonBtn.classList.add('closed-slot');
+      } else {
+        // 各時間帯の空き状況に基づいてボタンを有効/無効化
+        if (selectedReservation.maxEntriesAllDay === 0 || allDayCount >= selectedReservation.maxEntriesAllDay) {
+            allDayBtn.disabled = true;
+            allDayBtn.classList.add('closed-slot');
+        }
+        if (selectedReservation.maxEntriesMorning === 0 || morningCount >= selectedReservation.maxEntriesMorning) {
+            morningBtn.disabled = true;
+            morningBtn.classList.add('closed-slot');
+        }
+        if (selectedReservation.maxEntriesAfternoon === 0 || afternoonCount >= selectedReservation.maxEntriesAfternoon) {
+            afternoonBtn.disabled = true;
+            afternoonBtn.classList.add('closed-slot');
+        }
+      }
+
+      modal.style.display = "flex";
     }
+
 
     function closeTimeSelectionModal() {
       document.getElementById("timeSelectionModal").style.display = "none";
@@ -411,23 +534,55 @@
 
       const reservationRef = firebase.database().ref('reservations/' + currentReservationId + '/entries');
       const snapshot = await reservationRef.once('value');
-      const entries = snapshot.val();
-      const currentEntriesCount = entries ? Object.keys(entries).length : 0;
+      const entriesInFirebase = snapshot.val() || {};
       
       const selectedReservation = reservations.find(res => res.id === currentReservationId);
 
-      if (currentEntriesCount >= selectedReservation.maxEntries) {
-        alert("この予約は満員です。");
+      let currentCountForSlot = 0;
+      let maxEntriesForSlot = 0;
+
+      // 選択された時間帯の現在のエントリー数と最大人数を取得
+      for (const key in entriesInFirebase) {
+          const entry = entriesInFirebase[key];
+          if (entry.timeSlot === timeSlot) {
+              currentCountForSlot++;
+          }
+      }
+
+      if (timeSlot === '全日') {
+          maxEntriesForSlot = selectedReservation.maxEntriesAllDay;
+      } else if (timeSlot === '午前') {
+          maxEntriesForSlot = selectedReservation.maxEntriesMorning;
+      } else if (timeSlot === '午後') {
+          maxEntriesForSlot = selectedReservation.maxEntriesAfternoon;
+      }
+
+      // 時間帯ごとの空き状況をチェック (ボタンのdisabled属性で既に制御されているはずだが、念のため)
+      if (maxEntriesForSlot === 0) {
+          alert("この時間帯は現在予約できません。");
+          closeTimeSelectionModal();
+          return;
+      }
+      if (currentCountForSlot >= maxEntriesForSlot) {
+          alert("この時間帯は満員です。");
+          closeTimeSelectionModal();
+          return;
+      }
+
+      // 同じユーザーが既にその時間帯で予約していないかチェック
+      const isAlreadyBookedForSlot = entriesInFirebase ? Object.values(entriesInFirebase).some(entry => entry.userName === userName && entry.timeSlot === timeSlot) : false;
+      if (isAlreadyBookedForSlot) {
+        alert(`${userName} さんは既にこの時間帯でエントリーしています。`);
         closeTimeSelectionModal();
         return;
       }
 
-      // 同じユーザーが同じ時間帯で既に予約していないかチェック
-      const isAlreadyBooked = entries ? Object.values(entries).some(entry => entry.userName === userName && entry.timeSlot === timeSlot) : false;
-      if (isAlreadyBooked) {
-        alert(`${userName} さんは既にこの時間帯でエントリーしています。`);
-        closeTimeSelectionModal();
-        return;
+      // ユーザーが別の時間帯で既に予約していないかチェック（二重予約防止）
+      const isUserBookedInAnySlot = entriesInFirebase ? Object.values(entriesInFirebase).some(entry => entry.userName === userName) : false;
+      if (isUserBookedInAnySlot) {
+          alert(`${userName} さんは既に別の時間帯でエントリーしています。既存の予約をキャンセルしてから、再度エントリーしてください。`);
+          closeTimeSelectionModal();
+          return;
       }
 
       await reservationRef.push({ userName: userName, timeSlot: timeSlot });
