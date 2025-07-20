@@ -4,6 +4,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="reservations.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyCzD2S-S1yv5SyiFCs9OrNPZQzMb7VppWg",
@@ -94,56 +95,6 @@
   <script>
     const entryList = document.getElementById("entryList");
 
-    // 予約店舗情報を取得
-    const reservationsData = [
-      {
-        id: 1,
-        date: "2025年6月15日",
-        store: "サンプルカフェ渋谷店",
-        address: "東京都渋谷区○○1-2-3",
-        maxEntriesAllDay: 2, // 全日最大人数
-        maxEntriesMorning: 1, // 午前最大人数
-        maxEntriesAfternoon: 1, // 午後最大人数
-        // maxEntries: 2 // 全体としての最大人数 (互換性のため残すことも可能だが、今回は各時間帯を優先)
-      },
-      {
-        id: 2,
-        date: "2025年6月15日",
-        store: "サンプルカフェ新宿店",
-        address: "東京都新宿区△△4-5-6",
-        maxEntriesAllDay: 3,
-        maxEntriesMorning: 2,
-        maxEntriesAfternoon: 2,
-      },
-      {
-        id: 3,
-        date: "2025年6月15日",
-        store: "サンプルカフェ練馬店",
-        address: "東京都練馬区△△4-5-6",
-        maxEntriesAllDay: 1,
-        maxEntriesMorning: 1,
-        maxEntriesAfternoon: 0, // 例: 午後は予約不可
-      },
-      {
-        id: 4,
-        date: "2025年6月15日",
-        store: "サンプルカフェ中野店",
-        address: "東京都中野区△△4-5-6",
-        maxEntriesAllDay: 5,
-        maxEntriesMorning: 3,
-        maxEntriesAfternoon: 3,
-      },
-      {
-        id: 5,
-        date: "2025年6月15日",
-        store: "サンプルカフェ東京店",
-        address: "東京都千代田区△△4-5-6",
-        maxEntriesAllDay: 2,
-        maxEntriesMorning: 1,
-        maxEntriesAfternoon: 1,
-      }
-    ];
-
     function renderEntries(data) {
       entryList.innerHTML = "";
       const firebaseReservations = data.val();
@@ -154,7 +105,7 @@
         const entries = firebaseRes.entries || {};
         
         // 元のreservationsDataから店舗情報を取得
-        const reservationDetail = reservationsData.find(r => r.id === parseInt(id));
+        const reservationDetail = allReservations.find(r => r.id === parseInt(id));
 
         if (reservationDetail) {
           const allDayEntries = [];
