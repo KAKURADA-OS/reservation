@@ -86,8 +86,6 @@
     <a href="index.html">予約</a>
     <a href="attendance.html">勤怠登録</a>
     <a href="work_history.html">勤務履歴</a>
-    
-
   </div>
 
   <div class="log-container">
@@ -99,7 +97,6 @@
   </div>
 
   <script>
-    // Firebaseの設定をnew_index.htmlと合わせる
     const firebaseConfig = {
       apiKey: "AIzaSyCzD2S-S1yv5SyiFCs9OrNPZQzMb7VppWg",
       authDomain: "reservation-7ecf1.firebaseapp.com",
@@ -112,12 +109,9 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const auth = firebase.auth(); // Firebase Authを初期化
+    const auth = firebase.auth();
 
-    let userName = ""; // ユーザー名を保持するための変数
-
-    // 予約情報の定義 (new_index.html と同じものを使用)
-    
+    let userName = "";
 
     function openSidebar() {
       document.getElementById("sidebar").style.width = "250px";
@@ -132,7 +126,6 @@
       let reservedEntriesHtml = "";
       let hasReservation = false;
 
-      // localStorageからユーザー名を取得
       userName = localStorage.getItem("userName"); 
 
       if (!userName) {
@@ -140,8 +133,23 @@
         return;
       }
 
+      const currentDate = new Date();
+      currentDate.setHours(0, 0, 0, 0); // 時刻をリセットして日付のみを比較
+
       for (const res of allReservations) {
-        // Firebaseから各予約のエントリーリストを取得
+        // Parse the date string explicitly
+        const reservationDateParts = res.date.match(/(\d+)年(\d+)月(\d+)日/);
+        const year = parseInt(reservationDateParts[1]);
+        const month = parseInt(reservationDateParts[2]) - 1; // Month is 0-indexed
+        const day = parseInt(reservationDateParts[3]);
+        const reservationDate = new Date(year, month, day);
+        reservationDate.setHours(0, 0, 0, 0); // Reset time to 00:00:00 for accurate comparison
+
+        // 過去の予約は表示しない
+        if (reservationDate < currentDate) {
+          continue;
+        }
+
         const snapshot = await firebase.database().ref('reservations/' + res.id + '/entries').once('value');
         const entries = snapshot.val();
         
@@ -163,7 +171,6 @@
               <p><strong>住所:</strong> ${res.address}</p>
           `;
 
-          // ユーザーのエントリーを時間帯ごとに表示
           userEntriesForThisReservation.forEach(entry => {
               reservedEntriesHtml += `
                 <p class="user-entry-details"> - 時間帯: ${entry.timeSlot}</p>
@@ -184,11 +191,10 @@
       }
     }
 
-     // ページロード時に予約情報を表示する代わりに、匿名認証後に表示
     auth.signInAnonymously()
       .then(() => {
         console.log("匿名ユーザーがサインインしました (list.html)。");
-        displayReservations(); // ★ ここでdisplayReservations()を呼び出す
+        displayReservations();
       })
       .catch((error) => {
         console.error("匿名サインインエラー (list.html):", error);
