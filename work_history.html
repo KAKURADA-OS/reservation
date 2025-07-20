@@ -6,6 +6,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="reservations.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -206,7 +207,7 @@
     let userName = "";
 
     // 予約情報の定義 (attendance.html と同じものを使用)
-    const allReservations = [
+    /*const allReservations = [
       {
         id: 1,
         date: "2025年6月15日",
@@ -242,7 +243,7 @@
         address: "東京都千代田区△△4-5-6",
         maxEntries: 2
       }
-    ];
+    ];*/
 
     function openSidebar() {
       document.getElementById("sidebar").style.width = "250px";
@@ -312,7 +313,14 @@
       workHistoryListDiv.innerHTML = "";
       let hasWorkHistory = false;
 
-      userName = localStorage.getItem("userName");
+      userName = localStorage.getItem("userName"); // ユーザー名を取得
+
+      // allReservations を使用して予約詳細を取得
+      const reservationDetailsMap = {};
+      for (const res of allReservations) {
+        reservationDetailsMap[res.id] = res;
+      }
+
       if (!userName) {
         workHistoryListDiv.innerHTML = "<p class='no-work-history'>ユーザー名が登録されていません。メインページに戻って名前を登録してください。</p>";
         return;
