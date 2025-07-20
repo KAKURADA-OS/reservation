@@ -4,6 +4,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="reservations.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyCzD2S-S1yv5SyiFCs9OrNPZQzMb7VppWg",
@@ -271,53 +272,6 @@
   <script>
     let userName = "";
     let currentReservationId = null; // 選択された予約のIDを保持
-    const reservations = [
-      {
-        id: 1,
-        date: "2025年6月15日",
-        store: "サンプルカフェ渋谷店",
-        address: "東京都渋谷区○○1-2-3",
-        maxEntriesAllDay: 0, // 全日最大人数
-        maxEntriesMorning: 0, // 午前最大人数
-        maxEntriesAfternoon: 0, // 午後最大人数
-      },
-      {
-        id: 2,
-        date: "2025年6月15日",
-        store: "サンプルカフェ新宿店",
-        address: "東京都新宿区△△4-5-6",
-        maxEntriesAllDay: 3,
-        maxEntriesMorning: 2,
-        maxEntriesAfternoon: 2,
-      },
-      {
-        id: 3,
-        date: "2025年6月15日",
-        store: "サンプルカフェ練馬店",
-        address: "東京都練馬区△△4-5-6",
-        maxEntriesAllDay: 1,
-        maxEntriesMorning: 1,
-        maxEntriesAfternoon: 0, // 例: 午後は予約不可
-      },
-      {
-        id: 4,
-        date: "2025年6月15日",
-        store: "サンプルカフェ中野店",
-        address: "東京都中野区△△4-5-6",
-        maxEntriesAllDay: 5,
-        maxEntriesMorning: 3,
-        maxEntriesAfternoon: 3,
-      },
-      {
-        id: 5,
-        date: "2025年6月15日",
-        store: "サンプルカフェ東京店",
-        address: "東京都千代田区△△4-5-6",
-        maxEntriesAllDay: 2,
-        maxEntriesMorning: 1,
-        maxEntriesAfternoon: 1,
-      }
-    ];
 
     function openSidebar() {
       document.getElementById("sidebar").style.width = "250px";
@@ -348,14 +302,14 @@
       const container = document.getElementById("reservationContainer");
       container.innerHTML = "";
 
-      for (const res of reservations) {
+      for (const res of allReservations) { // ここは既に修正済みのはずですが念のため確認
         const card = document.createElement("div");
         card.className = "card";
 
         const entryButton = document.createElement("button");
         entryButton.className = "button entry-button";
         entryButton.textContent = "エントリー";
-        
+
         const cancelButton = document.createElement("button");
         cancelButton.className = "button cancel-button";
         cancelButton.textContent = "キャンセル";
@@ -364,7 +318,7 @@
         // Firebaseから現在のエントリー人数を取得
         const snapshot = await firebase.database().ref('reservations/' + res.id + '/entries').once('value');
         const entriesInFirebase = snapshot.val() || {};
-        
+
         // 各時間帯のエントリー数をカウント
         let allDayCount = 0;
         let morningCount = 0;
@@ -389,13 +343,10 @@
         if (isUserReservedInAnySlot) {
             entryButton.textContent = "エントリー済み";
             entryButton.disabled = true;
-            entryButton.classList.remove('entry-button', 'closed-button'); // 既存のクラスを削除
-            entryButton.classList.add('reserved-button'); // 新しいreserved-buttonクラスを追加
+            entryButton.classList.remove('entry-button', 'closed-button');
+            entryButton.classList.add('reserved-button');
             cancelButton.style.display = "block";
         } else {
-            // ここでは時間帯ごとの空き状況ではなく、ボタンを表示するかどうかを判断
-            // モーダルで個別の時間帯の空きをチェックするため、ここではざっくりと判断
-            // 例えば、いずれかの時間帯に空きがあるか、または全ての時間帯が満員か
             const hasAvailableSlot = (allDayCount < res.maxEntriesAllDay) ||
                                      (morningCount < res.maxEntriesMorning) ||
                                      (afternoonCount < res.maxEntriesAfternoon);
@@ -403,19 +354,18 @@
             if (hasAvailableSlot) {
                 entryButton.textContent = `エントリー`;
                 entryButton.disabled = false;
-                entryButton.classList.remove('reserved-button', 'closed-button'); // 既存のクラスを削除
+                entryButton.classList.remove('reserved-button', 'closed-button');
                 entryButton.classList.add('entry-button');
             } else {
                 entryButton.textContent = "受付終了";
                 entryButton.disabled = true;
-                entryButton.classList.remove('reserved-button', 'entry-button'); // 既存のクラスを削除
+                entryButton.classList.remove('reserved-button', 'entry-button');
                 entryButton.classList.add('closed-button');
             }
         }
 
-
         entryButton.onclick = () => {
-            currentReservationId = res.id; // 現在選択された予約のIDを保存
+            currentReservationId = res.id;
             openTimeSelectionModal();
         };
 
@@ -423,21 +373,20 @@
           const reservationRef = firebase.database().ref('reservations/' + res.id + '/entries');
           await reservationRef.once('value', snapshot => {
             snapshot.forEach(child => {
-              if (child.val().userName === userName) { // ユーザー名で一致するエントリーを削除
-                child.ref.remove(); 
+              if (child.val().userName === userName) {
+                child.ref.remove();
               }
             });
           });
 
           alert(`${userName} さんの予約をキャンセルしました。`);
-          renderReservations(); // 再描画して最新の状態を反映
-          // updateReservationLog(); // 予約一覧の更新を削除
+          renderReservations();
         };
 
         card.innerHTML = `
           <p><strong>日付:</strong> ${res.date}</p>
           <p><strong>店舗名:</strong> ${res.store}</p>
-          <p><strong>住所:</strong> ${res.address}</p>
+          <p><strong>住所:</strong> <a href="${res.mapUrl}" target="_blank">${res.address}</a></p>
         `;
         card.appendChild(entryButton);
         card.appendChild(cancelButton);
@@ -464,7 +413,8 @@
         return;
       }
 
-      const selectedReservation = reservations.find(res => res.id === currentReservationId);
+      // 修正: reservations を allReservations に変更
+      const selectedReservation = allReservations.find(res => res.id === currentReservationId);
       if (!selectedReservation) {
         console.error("エラー: 選択された予約情報が見つかりません。");
         return;
@@ -535,8 +485,8 @@
       const reservationRef = firebase.database().ref('reservations/' + currentReservationId + '/entries');
       const snapshot = await reservationRef.once('value');
       const entriesInFirebase = snapshot.val() || {};
-      
-      const selectedReservation = reservations.find(res => res.id === currentReservationId);
+
+      const selectedReservation = allReservations.find(res => res.id === currentReservationId); // ここは既に修正済みのはずですが念のため確認
 
       let currentCountForSlot = 0;
       let maxEntriesForSlot = 0;
@@ -588,56 +538,9 @@
       await reservationRef.push({ userName: userName, timeSlot: timeSlot });
       alert(`${userName} さんが ${selectedReservation.store} に ${timeSlot} でエントリーしました。`);
       closeTimeSelectionModal();
-      renderReservations(); 
-      // updateReservationLog(); // 予約ログの更新を削除
+      renderReservations();
     }
-
-    // updateReservationLog 関数自体を削除
-    /*
-    async function updateReservationLog() {
-      const log = document.getElementById("logContent");
-      let reservedEntriesHtml = "";
-      let hasReservation = false;
-
-      for (const res of reservations) {
-        const snapshot = await firebase.database().ref('reservations/' + res.id + '/entries').once('value');
-        const entries = snapshot.val();
-
-        if (entries) {
-          // entriesオブジェクトをループして、各エントリーをチェック
-          for (const key in entries) {
-            if (entries[key].userName === userName) {
-              reservedEntriesHtml += `
-                <p><strong>日付:</strong> ${res.date}</p>
-                <p><strong>店舗名:</strong> ${res.store}</p>
-                <p><strong>住所:</strong> ${res.address}</p>
-                <p><strong>時間帯:</strong> ${entries[key].timeSlot}</p>
-                <hr>
-              `;
-              hasReservation = true;
-            }
-          }
-        }
-      }
-
-      if (!hasReservation) {
-        log.innerHTML = "<p>まだ予約はありません</p>";
-      } else {
-        log.innerHTML = reservedEntriesHtml;
-      }
-      document.getElementById("reservationLog").style.display = "block"; // 予約ログを表示
-    }
-    */
-
-    // showReservationLog 関数自体を削除
-    /*
-    function showReservationLog() {
-      closeSidebar();
-      document.getElementById("reservationLog").style.display = "block";
-      window.scrollTo(0, document.body.scrollHeight);
-    }
-    */
-  </script>
+</script>
 
 </body>
 </html>
