@@ -100,6 +100,9 @@
       const firebaseReservations = data.val();
       let hasAnyEntry = false;
 
+      const currentDate = new Date();
+      currentDate.setHours(0, 0, 0, 0); // 時刻をリセットして日付のみを比較
+
       for (let id in firebaseReservations) {
         const firebaseRes = firebaseReservations[id];
         const entries = firebaseRes.entries || {};
@@ -108,6 +111,19 @@
         const reservationDetail = allReservations.find(r => r.id === parseInt(id));
 
         if (reservationDetail) {
+          // 予約日をDateオブジェクトに変換
+          const reservationDateParts = reservationDetail.date.match(/(\d+)年(\d+)月(\d+)日/);
+          const year = parseInt(reservationDateParts[1]);
+          const month = parseInt(reservationDateParts[2]) - 1; // 月は0から始まる
+          const day = parseInt(reservationDateParts[3]);
+          const reservationDate = new Date(year, month, day);
+          reservationDate.setHours(0, 0, 0, 0); // 時刻をリセット
+
+          // 過去の予約は表示しない
+          if (reservationDate < currentDate) {
+            continue;
+          }
+
           const allDayEntries = [];
           const morningEntries = [];
           const afternoonEntries = [];
