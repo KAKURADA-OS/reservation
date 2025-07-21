@@ -302,7 +302,23 @@
       const container = document.getElementById("reservationContainer");
       container.innerHTML = "";
 
-      for (const res of allReservations) { // ここは既に修正済みのはずですが念のため確認
+      const currentDate = new Date();
+      currentDate.setHours(0, 0, 0, 0); // 時刻をリセットして日付のみを比較
+
+      for (const res of allReservations) {
+        // 予約日をDateオブジェクトに変換
+        const reservationDateParts = res.date.match(/(\d+)年(\d+)月(\d+)日/);
+        const year = parseInt(reservationDateParts[1]);
+        const month = parseInt(reservationDateParts[2]) - 1; // 月は0から始まる
+        const day = parseInt(reservationDateParts[3]);
+        const reservationDate = new Date(year, month, day);
+        reservationDate.setHours(0, 0, 0, 0); // 時刻をリセット
+
+        // 過去の予約は表示しない
+        if (reservationDate < currentDate) {
+          continue;
+        }
+
         const card = document.createElement("div");
         card.className = "card";
 
