@@ -31,7 +31,7 @@ const allReservations = [
   },
   {
     id: 4,
-    date: "2025年6月15日",
+    date: "2025年7月20日",
     store: "サンプルカフェ中野店",
     address: "東京都中野区△△4-5-6",
     mapUrl: "https://maps.app.goo.gl/CA5XqTvdgpGvoK6a8",
@@ -41,7 +41,7 @@ const allReservations = [
   },
   {
     id: 5,
-    date: "2025年6月15日",
+    date: "2025年7月21日",
     store: "サンプルカフェ東京店",
     address: "東京都千代田区△△4-5-6",
     mapUrl: "https://maps.app.goo.gl/CA5XqTvdgpGvoK6a8",
@@ -51,7 +51,7 @@ const allReservations = [
   },
   {
     id: 6,
-    date: "2025年6月15日",
+    date: "2025年8月15日",
     store: "サンプルカフェ八王子店",
     address: "東京都八王子市△△4-5-6",
     mapUrl: "https://maps.app.goo.gl/CA5XqTvdgpGvoK6a8",
