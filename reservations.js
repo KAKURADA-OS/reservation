@@ -51,7 +51,7 @@ const allReservations = [
   },
   {
     id: 6,
-    date: "2025年8月15日",
+    date: "2025年8月16日",
     store: "サンプルカフェ八王子店",
     address: "東京都八王子市△△4-5-6",
     mapUrl: "https://maps.app.goo.gl/CA5XqTvdgpGvoK6a8",
