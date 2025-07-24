@@ -41,7 +41,7 @@ const allReservations = [
   },
   {
     id: 5,
-    date: "2025年7月21日",
+    date: "2025年7月24日",
     store: "サンプルカフェ東京店",
     address: "東京都千代田区△△4-5-6",
     mapUrl: "https://maps.app.goo.gl/CA5XqTvdgpGvoK6a8",
