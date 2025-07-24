@@ -250,6 +250,7 @@
                 <p><strong>勤務時間:</strong> ${entry.startTime} ~ ${entry.endTime}</p>
                 <p><strong>休憩時間:</strong> ${entry.restTime} 分</p>
                 <p><strong>交通費:</strong> ${entry.travelCost} 円</p>
+                <p><strong>所得税:</strong> ${entry.incomeTaxAmount !== undefined ? entry.incomeTaxAmount : 'N/A'} 円</p>
                 <div class="salary-display">
                   給料: ${entry.calculatedSalary.toLocaleString()} 円
                 </div>
