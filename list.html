@@ -154,10 +154,19 @@
         const entries = snapshot.val();
         
         let userEntriesForThisReservation = [];
+        let userHasMorningBooking = false;
+        let userHasAfternoonBooking = false;
+
         if (entries) {
             for (const key in entries) {
                 if (entries[key].userName === userName) {
                     userEntriesForThisReservation.push(entries[key]);
+                    if (entries[key].timeSlot === '午前') {
+                        userHasMorningBooking = true;
+                    }
+                    if (entries[key].timeSlot === '午後') {
+                        userHasAfternoonBooking = true;
+                    }
                 }
             }
         }
@@ -171,11 +180,17 @@
               <p><strong>住所:</strong> ${res.address}</p>
           `;
 
-          userEntriesForThisReservation.forEach(entry => {
+          if (userHasMorningBooking && userHasAfternoonBooking) {
               reservedEntriesHtml += `
-                <p class="user-entry-details"> - 時間帯: ${entry.timeSlot}</p>
+                <p class="user-entry-details"> - 時間帯: 終日</p>
               `;
-          });
+          } else {
+              userEntriesForThisReservation.forEach(entry => {
+                  reservedEntriesHtml += `
+                    <p class="user-entry-details"> - 時間帯: ${entry.timeSlot}</p>
+                  `;
+              });
+          }
 
           reservedEntriesHtml += `
               <hr>
