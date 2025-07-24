@@ -5,9 +5,8 @@ const allReservations = [
     store: "越谷七左エ門通り",
     address: "埼玉県越谷市七左町7-316-1",
     mapUrl: "https://maps.app.goo.gl/bSvTQoE3UFvxjQ7k9",
-    maxEntriesAllDay: 10,
-    maxEntriesMorning: 5,
-    maxEntriesAfternoon: 5,
+    maxEntriesMorning: 10,
+    maxEntriesAfternoon: 10,
   },
   {
     id: 2,
@@ -15,9 +14,8 @@ const allReservations = [
     store: "恵比寿南一丁目",
     address: "東京都渋谷区恵比寿南1-14-15 ラレンヌ恵比寿",
     mapUrl: "https://maps.app.goo.gl/mzF9JZAPWRATgjxt5",
-    maxEntriesAllDay: 10,
-    maxEntriesMorning: 5,
-    maxEntriesAfternoon: 5,
+    maxEntriesMorning: 10,
+    maxEntriesAfternoon: 10,
   },
   {
     id: 3,
@@ -25,9 +23,8 @@ const allReservations = [
     store: "所沢ニュータウン",
     address: "埼玉県所沢市中新井5-8-13",
     mapUrl: "https://maps.app.goo.gl/9kMHpnnKchD2WsTs8",
-    maxEntriesAllDay: 10,
-    maxEntriesMorning: 5,
-    maxEntriesAfternoon: 5,
+    maxEntriesMorning: 10,
+    maxEntriesAfternoon: 10,
   },
   {
     id: 4,
@@ -35,9 +32,8 @@ const allReservations = [
     store: "立川富士見町",
     address: "東京都立川富士見町1-2-14",
     mapUrl: "https://maps.app.goo.gl/QFYPjJyic4T1HsDX7",
-    maxEntriesAllDay: 10,
-    maxEntriesMorning: 5,
-    maxEntriesAfternoon: 5,
+    maxEntriesMorning: 10,
+    maxEntriesAfternoon: 10,
   },
   {
     id: 5,
@@ -45,8 +41,7 @@ const allReservations = [
     store: "日大生産工学部前",
     address: "千葉県習志野市大久保3-12-15",
     mapUrl: "https://maps.app.goo.gl/KnkV4hWYWrZwDMTM9",
-    maxEntriesAllDay: 10,
-    maxEntriesMorning: 5,
-    maxEntriesAfternoon: 5,
+    maxEntriesMorning: 10,
+    maxEntriesAfternoon: 10,
   }
 ];
