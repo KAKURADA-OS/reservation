@@ -64,6 +64,73 @@
       align-items: center;
     }
 
+    .filter-controls {
+      margin-bottom: 20px;
+      text-align: center;
+      padding: 15px;
+      background-color: #e9e9e9;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      width: 90%;
+      max-width: 550px;
+      display: flex;
+      flex-direction: column; /* Main container is column */
+      align-items: center;
+    }
+
+    .filter-line-one, .filter-line-two {
+      display: flex; /* Use flex for elements within each line */
+      align-items: center;
+      margin-bottom: 10px; /* Space between lines */
+      width: 100%; /* Take full width */
+      justify-content: center; /* Center items in the line */
+      flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    }
+
+    .filter-controls label {
+      font-weight: bold;
+      margin-right: 5px;
+      white-space: nowrap;
+    }
+
+    .filter-controls select {
+      padding: 8px;
+      margin-right: 10px; /* Space between selects/labels */
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      flex-grow: 1; /* Allow select boxes to grow */
+      max-width: 120px; /* Adjust max-width for select boxes */
+    }
+    
+    /* Specific adjustments for select elements within filter-line-one */
+    .filter-line-one select {
+      max-width: 90px; /* Make year/month selects a bit narrower */
+    }
+
+    .filter-line-one select:last-of-type {
+        margin-right: 0; /* Remove margin right for the last select in the first line */
+    }
+
+    .filter-line-two select {
+        max-width: 180px; /* Make username select wider */
+        margin-right: 0; /* Remove margin right for the select in the second line */
+    }
+
+    .filter-controls button {
+      padding: 8px 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+      margin-top: 10px;
+    }
+
+    .filter-controls button:hover {
+      background-color: #0056b3;
+    }
+
     .card {
       background-color: #fff;
       padding: 20px;
@@ -118,6 +185,28 @@
 
   <h2>承認一覧</h2>
   <div class="container">
+    <div class="filter-controls">
+      <div class="filter-line-one">
+        <select id="yearFilter">
+          <option value="">全て</option>
+          </select>
+        <label for="yearFilter">年</label>
+        <select id="monthFilter">
+          <option value="">全て</option>
+          </select>
+        <label for="monthFilter">月</label>
+      </div>
+
+      <div class="filter-line-two">
+        <label for="userNameFilter">ユーザー名:</label>
+        <select id="userNameFilter">
+          <option value="">全てのユーザー</option>
+          </select>
+      </div>
+
+      <button onclick="applyFilters()">絞り込む</button>
+    </div>
+
     <div id="approvedAttendanceList">
       <p style="text-align:center;">承認された勤怠情報を読み込み中です...</p>
     </div>
@@ -138,44 +227,6 @@
     const db = firebase.database();
     const auth = firebase.auth();
 
-    /*const allReservations = [
-      {
-        id: 1,
-        date: "2025年6月15日",
-        store: "サンプルカフェ渋谷店",
-        address: "東京都渋谷区○○1-2-3",
-        maxEntries: 2
-      },
-      {
-        id: 2,
-        date: "2025年6月15日",
-        store: "サンプルカフェ新宿店",
-        address: "東京都新宿区△△4-5-6",
-        maxEntries: 3
-      },
-      {
-        id: 3,
-        date: "2025年6月15日",
-        store: "サンプルカフェ練馬店",
-        address: "東京都練馬区△△4-5-6",
-        maxEntries: 1
-      },
-      {
-        id: 4,
-        date: "2025年6月15日",
-        store: "サンプルカフェ中野店",
-        address: "東京都中野区△△4-5-6",
-        maxEntries: 5
-      },
-      {
-        id: 5,
-        date: "2025年6月15日",
-        store: "サンプルカフェ東京店",
-        address: "東京都千代田区△△4-5-6",
-        maxEntries: 2
-      }
-    ];*/
-
     function openSidebar() {
       document.getElementById("sidebar").style.width = "250px";
     }
@@ -189,42 +240,155 @@
       approvedAttendanceListDiv.innerHTML = "";
       let hasApprovedEntries = false;
 
-      for (const res of allReservations) {
-        const snapshot = await firebase.database().ref('reservations/' + res.id + '/entries').once('value');
-        const entries = snapshot.val();
+      // Get filter values
+      const monthFilter = document.getElementById('monthFilter').value;
+      const userNameFilter = document.getElementById('userNameFilter').value;
+      const yearFilter = document.getElementById('yearFilter').value;
 
-        if (entries) {
+      // Firebaseから全ての予約IDを取得する
+      const allReservationsSnapshot = await firebase.database().ref('reservations').once('value');
+      const allReservationIds = [];
+      if (allReservationsSnapshot.exists()) {
+          allReservationsSnapshot.forEach(childSnapshot => {
+              allReservationIds.push(childSnapshot.key);
+          });
+      }
+
+      // allReservations (reservations.jsから読み込まれる想定) をマップに変換して高速検索
+      const reservationDetailsMap = {};
+      if (typeof allReservations !== 'undefined' && Array.isArray(allReservations)) {
+          allReservations.forEach(res => {
+              reservationDetailsMap[res.id] = res;
+          });
+      }
+
+      const uniqueUserNames = new Set();
+      const uniqueYears = new Set();
+      const uniqueMonths = new Set(); // 月を収集するためのSet
+
+      // Firebaseから取得した予約IDをループ
+      for (const reservationId of allReservationIds) {
+        const entriesSnapshot = await firebase.database().ref('reservations/' + reservationId + '/entries').once('value');
+        const entries = entriesSnapshot.val();
+        const res = reservationDetailsMap[reservationId];
+
+        if (entries && res) {
+          const dateParts = res.date.match(/(\d+)年(\d+)月(\d+)日/);
+          const entryYear = dateParts ? dateParts[1] : '';
+          const entryMonth = dateParts ? dateParts[2].padStart(2, '0') : ''; // "06"
+
+          if (entryYear) {
+            uniqueYears.add(entryYear);
+          }
+          if (entryMonth) {
+            uniqueMonths.add(entryMonth);
+          }
+
           for (const key in entries) {
             const entry = entries[key];
-            // status が 'approved' の勤怠情報のみを表示
             if (entry.status === 'approved') {
-              hasApprovedEntries = true;
+              if (entry.userName) {
+                uniqueUserNames.add(entry.userName);
+              }
 
-              const card = document.createElement("div");
-              card.className = "card";
-              card.setAttribute('data-reservation-id', res.id);
-              card.setAttribute('data-entry-id', key);
+              const matchesMonth = (monthFilter === '' || entryMonth === monthFilter);
+              const matchesUserName = (userNameFilter === '' || (entry.userName === userNameFilter));
+              const matchesYear = (yearFilter === '' || entryYear === yearFilter);
 
-              card.innerHTML = `
-                <p><strong>日付:</strong> ${res.date}</p>
-                <p><strong>店舗名:</strong> ${res.store}</p>
-                <p><strong>ユーザー名:</strong> ${entry.userName}</p>
-                <p><strong>勤務時間:</strong> ${entry.startTime} ~ ${entry.endTime}</p>
-                <p><strong>休憩時間:</strong> ${entry.restTime} 分</p>
-                <p><strong>交通費:</strong> ${entry.travelCost} 円</p>
-                <p><strong>所得税:</strong> ${entry.incomeTaxAmount !== undefined ? entry.incomeTaxAmount : 'N/A'} 円</p>
-                <p><strong>給料:</strong> ${entry.calculatedSalary.toLocaleString()} 円</p>
-                <p style="font-size: 0.9em; color: #666; text-align: right;">承認日時: ${new Date(entry.approvedAt).toLocaleString()}</p>
-              `;
-              approvedAttendanceListDiv.appendChild(card);
+              if (matchesMonth && matchesUserName && matchesYear) {
+                hasApprovedEntries = true;
+
+                const card = document.createElement("div");
+                card.className = "card";
+                card.setAttribute('data-reservation-id', reservationId);
+                card.setAttribute('data-entry-id', key);
+
+                card.innerHTML = `
+                  <p><strong>日付:</strong> ${res.date}</p>
+                  <p><strong>店舗名:</strong> ${res.store}</p>
+                  <p><strong>ユーザー名:</strong> ${entry.userName}</p>
+                  <p><strong>勤務時間:</strong> ${entry.startTime} ~ ${entry.endTime}</p>
+                  <p><strong>休憩時間:</strong> ${entry.restTime} 分</p>
+                  <p><strong>交通費:</strong> ${entry.travelCost} 円</p>
+                  <p><strong>給料:</strong> ${entry.calculatedSalary.toLocaleString()} 円</p>
+                  <p><strong>所得税:</strong> ${entry.incomeTaxAmount !== undefined ? entry.incomeTaxAmount : 'N/A'} 円</p>
+                  <p style="font-size: 0.9em; color: #666; text-align: right;">承認日時: ${new Date(entry.approvedAt).toLocaleString()}</p>
+                `;
+                approvedAttendanceListDiv.appendChild(card);
+              }
             }
           }
         }
       }
 
+      updateUserNameFilter(uniqueUserNames);
+      updateYearFilter(uniqueYears);
+      updateMonthFilter(uniqueMonths); // Call to update month filter
+
       if (!hasApprovedEntries) {
-        approvedAttendanceListDiv.innerHTML = "<p class='no-approved-entries'>承認された勤怠情報はありません。</p>";
+        approvedAttendanceListDiv.innerHTML = "<p class='no-approved-entries'>表示する承認された勤怠情報はありません。</p>";
       }
+    }
+
+    function updateUserNameFilter(userNames) {
+      const userNameSelect = document.getElementById('userNameFilter');
+      const currentSelectedValue = userNameSelect.value;
+
+      userNameSelect.innerHTML = '<option value="">全てのユーザー</option>';
+
+      const sortedUserNames = Array.from(userNames).sort();
+      sortedUserNames.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        userNameSelect.appendChild(option);
+      });
+
+      if (Array.from(userNames).includes(currentSelectedValue) || currentSelectedValue === '') {
+        userNameSelect.value = currentSelectedValue;
+      }
+    }
+
+    function updateYearFilter(years) {
+      const yearSelect = document.getElementById('yearFilter');
+      const currentSelectedValue = yearSelect.value;
+
+      yearSelect.innerHTML = '<option value="">全て</option>';
+
+      const sortedYears = Array.from(years).sort((a, b) => b - a);
+      sortedYears.forEach(year => {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year; // Display only the year number
+        yearSelect.appendChild(option);
+      });
+
+      if (Array.from(years).includes(currentSelectedValue) || currentSelectedValue === '') {
+        yearSelect.value = currentSelectedValue;
+      }
+    }
+
+    function updateMonthFilter(months) {
+      const monthSelect = document.getElementById('monthFilter');
+      const currentSelectedValue = monthSelect.value;
+
+      monthSelect.innerHTML = '<option value="">全て</option>';
+
+      const sortedMonths = Array.from(months).sort((a, b) => parseInt(a) - parseInt(b));
+      sortedMonths.forEach(month => {
+        const option = document.createElement('option');
+        option.value = month;
+        option.textContent = parseInt(month); // Display only the month number
+        monthSelect.appendChild(option);
+      });
+
+      if (Array.from(months).includes(currentSelectedValue) || currentSelectedValue === '') {
+        monthSelect.value = currentSelectedValue;
+      }
+    }
+
+    function applyFilters() {
+      loadApprovedAttendance();
     }
 
     auth.signInAnonymously()
