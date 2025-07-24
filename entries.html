@@ -177,24 +177,42 @@
             continue;
           }
 
-          const allDayEntries = [];
-          const morningEntries = [];
-          const afternoonEntries = [];
+          const userTimeSlots = {}; // Tracks {userName: {morning: true, afternoon: true}}
 
-          // エントリーを時間帯で分類
           for (const entryId in entries) {
-            const entry = entries[entryId];
-            if (entry.timeSlot === '全日') {
-              allDayEntries.push(entry.userName);
-            } else if (entry.timeSlot === '午前') {
-              morningEntries.push(entry.userName);
-            } else if (entry.timeSlot === '午後') {
-              afternoonEntries.push(entry.userName);
-            }
+              const entry = entries[entryId];
+              if (!userTimeSlots[entry.userName]) {
+                  userTimeSlots[entry.userName] = { morning: false, afternoon: false };
+              }
+              if (entry.timeSlot === '午前') {
+                  userTimeSlots[entry.userName].morning = true;
+              } else if (entry.timeSlot === '午後') {
+                  userTimeSlots[entry.userName].afternoon = true;
+              }
+          }
+
+          const fullDayBookingsUserNames = [];
+          const morningDisplayEntries = [];
+          const afternoonDisplayEntries = [];
+
+          for (const userName in userTimeSlots) {
+              if (userTimeSlots[userName].morning && userTimeSlots[userName].afternoon) {
+                  fullDayBookingsUserNames.push(userName);
+              } else if (userTimeSlots[userName].morning) {
+                  morningDisplayEntries.push(userName);
+              } else if (userTimeSlots[userName].afternoon) {
+                  afternoonDisplayEntries.push(userName);
+              }
+          }
+
+          // Calculate maxEntriesAllDayDisplay based on the minimum of morning and afternoon capacities
+          let maxEntriesAllDayDisplay = 'N/A';
+          if (reservationDetail.maxEntriesMorning !== undefined && reservationDetail.maxEntriesAfternoon !== undefined) {
+              maxEntriesAllDayDisplay = Math.min(reservationDetail.maxEntriesMorning, reservationDetail.maxEntriesAfternoon);
           }
 
           // エントリーがあれば表示
-          if (allDayEntries.length > 0 || morningEntries.length > 0 || afternoonEntries.length > 0) {
+          if (fullDayBookingsUserNames.length > 0 || morningDisplayEntries.length > 0 || afternoonDisplayEntries.length > 0) {
             hasAnyEntry = true;
 
             const card = document.createElement("div");
@@ -206,35 +224,35 @@
               <p><strong>住所:</strong> ${reservationDetail.address}</p>
             `;
 
-            // 全日セクション
-            if (reservationDetail.maxEntriesAllDay !== undefined) { // maxEntriesAllDayが定義されている場合
+            // 終日セクション
+            if (fullDayBookingsUserNames.length > 0 || maxEntriesAllDayDisplay !== 'N/A') { 
               const allDaySection = document.createElement("div");
               allDaySection.className = "time-slot-section";
               allDaySection.innerHTML = `
-                <h4>全日</h4><span class="entry-count"> (${allDayEntries.length}/${reservationDetail.maxEntriesAllDay}人)</span>
-                <div>${allDayEntries.map(name => `<div class="user-name">${name}</div>`).join("")}</div>
+                <h4>終日</h4><span class="entry-count"> (${fullDayBookingsUserNames.length}/${maxEntriesAllDayDisplay}人)</span>
+                <div>${fullDayBookingsUserNames.map(name => `<div class="user-name">${name}</div>`).join("")}</div>
               `;
               card.appendChild(allDaySection);
             }
 
             // 午前セクション
-            if (reservationDetail.maxEntriesMorning !== undefined) { // maxEntriesMorningが定義されている場合
+            if (reservationDetail.maxEntriesMorning !== undefined) { 
               const morningSection = document.createElement("div");
               morningSection.className = "time-slot-section";
               morningSection.innerHTML = `
-                <h4>午前</h4><span class="entry-count"> (${morningEntries.length}/${reservationDetail.maxEntriesMorning}人)</span>
-                <div>${morningEntries.map(name => `<div class="user-name">${name}</div>`).join("")}</div>
+                <h4>午前</h4><span class="entry-count"> (${morningDisplayEntries.length}/${reservationDetail.maxEntriesMorning}人)</span>
+                <div>${morningDisplayEntries.map(name => `<div class="user-name">${name}</div>`).join("")}</div>
               `;
               card.appendChild(morningSection);
             }
 
             // 午後セクション
-            if (reservationDetail.maxEntriesAfternoon !== undefined) { // maxEntriesAfternoonが定義されている場合
+            if (reservationDetail.maxEntriesAfternoon !== undefined) { 
               const afternoonSection = document.createElement("div");
               afternoonSection.className = "time-slot-section";
               afternoonSection.innerHTML = `
-                <h4>午後</h4><span class="entry-count"> (${afternoonEntries.length}/${reservationDetail.maxEntriesAfternoon}人)</span>
-                <div>${afternoonEntries.map(name => `<div class="user-name">${name}</div>`).join("")}</div>
+                <h4>午後</h4><span class="entry-count"> (${afternoonDisplayEntries.length}/${reservationDetail.maxEntriesAfternoon}人)</span>
+                <div>${afternoonDisplayEntries.map(name => `<div class="user-name">${name}</div>`).join("")}</div>
               `;
               card.appendChild(afternoonSection);
             }
